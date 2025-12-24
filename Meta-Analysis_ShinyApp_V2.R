@@ -2604,9 +2604,33 @@ server <- function(input, output, session) {
     
     # ---- TEXT STATS COLUMN --------------------------------------------------
     if (input$show_effect_values || input$show_ci_values || input$show_weights) {
+      # Calculate the full data range including group diamonds if present
+      data_max_for_stats <- max(plot_data$ci_upper)
+      
+      # Include group diamond CIs in the calculation if they exist
+      if (grouping_enabled &&
+          isTRUE(input$show_group_diamonds) &&
+          !is.null(values$forest_group_models) &&
+          length(values$forest_group_models) > 0) {
+        
+        group_cis_upper <- sapply(values$forest_group_models, function(gm) {
+          if(is.null(gm)) return(NA)
+          gm$ci.ub
+        })
+        
+        if(any(!is.na(group_cis_upper))) {
+          data_max_for_stats <- max(data_max_for_stats, group_cis_upper, na.rm = TRUE)
+        }
+      }
+      
+      # Also include overall diamond if shown
+      if (input$show_overall_diamond) {
+        data_max_for_stats <- max(data_max_for_stats, model$ci.ub)
+      }
+      
       x_range    <- diff(range(c(plot_data$ci_lower, plot_data$ci_upper)))
-      plot_x_max <- max(plot_data$ci_upper) + x_range * 0.1
-      stat_x_pos <- plot_x_max + x_range * 0.4
+      plot_x_max <- data_max_for_stats + x_range * 0.15  # Increased buffer
+      stat_x_pos <- plot_x_max + x_range * 0.6  # Increased spacing from 0.4 to 0.6
       
       # Header will be added later at header_y position (same row as "Study" header)
       # Store stat_x_pos for use in header section
@@ -2750,7 +2774,7 @@ server <- function(input, output, session) {
       }
       
       x_plot_min <- min(plot_data$ci_lower, model$ci.lb) - x_range * 0.1
-      x_plot_max <- stat_x_pos + x_range * 0.7
+      x_plot_max <- stat_x_pos + x_range * 1.0  # Increased from 0.7 to 1.0 for more text space
     } else {
       x_range    <- diff(range(c(plot_data$ci_lower, plot_data$ci_upper)))
       x_plot_min <- min(plot_data$ci_lower, model$ci.lb) - x_range * 0.1
