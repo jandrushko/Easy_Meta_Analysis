@@ -107,15 +107,15 @@ ui <- dashboardPage(
             
             fluidRow(
               column(6,
-                fileInput("file", "Choose Excel/CSV File:",
-                         accept = c(".xlsx", ".xls", ".csv")),
-                uiOutput("sheet_selector"),
-                actionButton("load_data", "Load Data", 
-                           class = "btn-primary", icon = icon("upload"))
+                     fileInput("file", "Choose Excel/CSV File:",
+                               accept = c(".xlsx", ".xls", ".csv")),
+                     uiOutput("sheet_selector"),
+                     actionButton("load_data", "Load Data", 
+                                  class = "btn-primary", icon = icon("upload"))
               ),
               column(6,
-                h4("Import Summary"),
-                verbatimTextOutput("import_summary")
+                     h4("Import Summary"),
+                     verbatimTextOutput("import_summary")
               )
             ),
             
@@ -145,23 +145,23 @@ ui <- dashboardPage(
             width = 8,
             
             div(style = "background: #e7f3ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;",
-              h4("Add Filter Variables", style = "margin-top: 0;"),
-              fluidRow(
-                column(6,
-                  selectInput("cat_var_to_add", "Categorical variables:",
-                             choices = c())
-                ),
-                column(3,
-                  br(),
-                  actionButton("add_cat_var", "Add Variable",
-                             class = "btn-info", icon = icon("plus"))
-                ),
-                column(3,
-                  br(),
-                  actionButton("remove_all_filters", "Remove All",
-                             class = "btn-warning", icon = icon("times"))
+                h4("Add Filter Variables", style = "margin-top: 0;"),
+                fluidRow(
+                  column(6,
+                         selectInput("cat_var_to_add", "Categorical variables:",
+                                     choices = c())
+                  ),
+                  column(3,
+                         br(),
+                         actionButton("add_cat_var", "Add Variable",
+                                      class = "btn-info", icon = icon("plus"))
+                  ),
+                  column(3,
+                         br(),
+                         actionButton("remove_all_filters", "Remove All",
+                                      class = "btn-warning", icon = icon("times"))
+                  )
                 )
-              )
             ),
             
             div(
@@ -172,9 +172,9 @@ ui <- dashboardPage(
             hr(),
             
             actionButton("apply_filters", "Apply Filters", 
-                       class = "btn-success btn-lg", icon = icon("check")),
+                         class = "btn-success btn-lg", icon = icon("check")),
             actionButton("reset_filters", "Reset to Original Data", 
-                       class = "btn-warning", icon = icon("undo"))
+                         class = "btn-warning", icon = icon("undo"))
           ),
           
           box(
@@ -216,60 +216,60 @@ ui <- dashboardPage(
             
             fluidRow(
               column(3,
-                h4("Effect Size Type"),
-                selectInput("es_type", "Type:",
-                           choices = c(
-                             "SMCR (pre-post)" = "SMCR",
-                             "SMD (between groups)" = "SMD",
-                             "Raw difference (MD)" = "MD"
-                           )),
-                
-                checkboxInput("apply_hedges", "Apply Hedges correction", 
-                            value = TRUE),
-                
-                hr(),
-                
-                checkboxInput("auto_remove_missing", 
-                            "Auto-remove rows with missing data", 
-                            value = TRUE)
+                     h4("Effect Size Type"),
+                     selectInput("es_type", "Type:",
+                                 choices = c(
+                                   "SMCR (pre-post)" = "SMCR",
+                                   "SMD (between groups)" = "SMD",
+                                   "Raw difference (MD)" = "MD"
+                                 )),
+                     
+                     checkboxInput("apply_hedges", "Apply Hedges correction", 
+                                   value = TRUE),
+                     
+                     hr(),
+                     
+                     checkboxInput("auto_remove_missing", 
+                                   "Auto-remove rows with missing data", 
+                                   value = TRUE)
               ),
               
               column(4,
-                h4("Column Mapping"),
-                selectInput("studyid_col", "Study ID:", choices = c()),
-                selectInput("mean1_col", "Mean 1 (Post):", choices = c()),
-                selectInput("mean2_col", "Mean 2 (Pre):", choices = c()),
-                selectInput("sd1_col", "SD 1:", choices = c()),
-                selectInput("sd2_col", "SD 2:", choices = c()),
-                selectInput("n_col", "Sample Size:", choices = c()),
-                selectInput("group_col", "Group (optional):", choices = c("", ""))
+                     h4("Column Mapping"),
+                     selectInput("studyid_col", "Study ID:", choices = c()),
+                     selectInput("mean1_col", "Mean 1 (Post):", choices = c()),
+                     selectInput("mean2_col", "Mean 2 (Pre):", choices = c()),
+                     selectInput("sd1_col", "SD 1:", choices = c()),
+                     selectInput("sd2_col", "SD 2:", choices = c()),
+                     selectInput("n_col", "Sample Size:", choices = c()),
+                     selectInput("group_col", "Group (optional):", choices = c("", ""))
               ),
               
               column(5,
-                h4("Pre-Post Correlation"),
-                radioButtons("corr_source", "Source:",
-                           choices = c(
-                             "Fixed value" = "fixed",
-                             "From column" = "column",
-                             "Compute from change SD" = "compute"
-                           ),
-                           selected = "column"),
-                
-                conditionalPanel(
-                  condition = "input.corr_source == 'fixed'",
-                  sliderInput("corr_value", "Correlation:", 
-                            min = 0, max = 1, value = 0.5, step = 0.05)
-                ),
-                
-                conditionalPanel(
-                  condition = "input.corr_source == 'column'",
-                  selectInput("corr_col", "Correlation column:", choices = c())
-                ),
-                
-                conditionalPanel(
-                  condition = "input.corr_source == 'compute'",
-                  selectInput("change_sd_col", "Change SD column:", choices = c())
-                )
+                     h4("Pre-Post Correlation"),
+                     radioButtons("corr_source", "Source:",
+                                  choices = c(
+                                    "Fixed value" = "fixed",
+                                    "From column" = "column",
+                                    "Compute from change SD" = "compute"
+                                  ),
+                                  selected = "column"),
+                     
+                     conditionalPanel(
+                       condition = "input.corr_source == 'fixed'",
+                       sliderInput("corr_value", "Correlation:", 
+                                   min = 0, max = 1, value = 0.5, step = 0.05)
+                     ),
+                     
+                     conditionalPanel(
+                       condition = "input.corr_source == 'column'",
+                       selectInput("corr_col", "Correlation column:", choices = c())
+                     ),
+                     
+                     conditionalPanel(
+                       condition = "input.corr_source == 'compute'",
+                       selectInput("change_sd_col", "Change SD column:", choices = c())
+                     )
               )
             ),
             
@@ -277,17 +277,17 @@ ui <- dashboardPage(
             
             fluidRow(
               column(12,
-                div(style = "background: #fff3cd; padding: 10px; border-radius: 5px;",
-                  strong("Pre-calculation Check:"),
-                  verbatimTextOutput("precalc_check")
-                )
+                     div(style = "background: #fff3cd; padding: 10px; border-radius: 5px;",
+                         strong("Pre-calculation Check:"),
+                         verbatimTextOutput("precalc_check")
+                     )
               )
             ),
             
             uiOutput("missing_data_warning"),
             
             actionButton("calculate_es", "Calculate Effect Sizes",
-                       class = "btn-warning btn-lg", icon = icon("calculator"))
+                         class = "btn-warning btn-lg", icon = icon("calculator"))
           )
         ),
         
@@ -325,140 +325,140 @@ ui <- dashboardPage(
             collapsed = FALSE,
             
             div(style = "background: #fff9e6; border: 2px solid #ffc107; padding: 12px; border-radius: 5px;",
-              fluidRow(
-                column(3,
-                  h4("Model Type", style = "margin-top: 0;"),
-                  selectInput("ma_model", "Estimation method:",
-                             choices = c(
-                               "Random Effects (REML)" = "REML",
-                               "Fixed Effect" = "FE",
-                               "DerSimonian-Laird" = "DL",
-                               "Maximum Likelihood" = "ML"
-                             ),
-                             selected = "REML"),
-                  helpText("REML is recommended for most meta-analyses")
-                ),
-                
-                column(3,
-                  h4("Statistical Test", style = "margin-top: 0;"),
-                  selectInput("test_type", "Test type:",
-                             choices = c(
-                               "Knapp-Hartung" = "knha",
-                               "z-test" = "z"
-                             ),
-                             selected = "knha"),
-                  helpText("Knapp-Hartung adjusts for uncertainty in τ²")
-                ),
-                
-                column(3,
-                  h4("Multi-level Model", style = "margin-top: 0;"),
-                  checkboxInput("use_multilevel", 
-                              "Use 3-level model (StudyID/EffectID)",
-                              value = FALSE),
-                  helpText("Enable when multiple outcomes per study")
-                ),
-                
-                column(3,
-                  br(),
-                  div(style = "background: #e3f2fd; padding: 10px; border-radius: 5px; margin-top: 15px;",
-                    p(style = "margin: 0; font-size: 12px;",
-                      icon("info-circle"),
-                      " Settings apply when you click 'Update Plot' below.")
-                  )
-                )
-              ),
-              
-              # === NEW: DEPENDENCY HANDLING OPTIONS ===
-              hr(style = "border-color: #ffc107; margin: 15px 0;"),
-              
-              fluidRow(
-                column(12,
-                  h4(icon("link"), " Handling Dependent Effect Sizes", 
-                     style = "margin-top: 0; margin-bottom: 10px; color: #856404;"),
-                  p(style = "font-size: 12px; color: #666; margin-bottom: 15px;",
-                    "When the same participants contribute multiple outcomes (e.g., strength AND size from the same 8 people), ",
-                    "their effect sizes share sampling error. These options handle this dependency.")
-                )
-              ),
-              
-              fluidRow(
-                column(4,
-                  # CHE MODEL OPTION
-                  checkboxInput("use_che_model", 
-                              strong("Use CHE working model (vcalc)"),
-                              value = FALSE),
+                fluidRow(
+                  column(3,
+                         h4("Model Type", style = "margin-top: 0;"),
+                         selectInput("ma_model", "Estimation method:",
+                                     choices = c(
+                                       "Random Effects (REML)" = "REML",
+                                       "Fixed Effect" = "FE",
+                                       "DerSimonian-Laird" = "DL",
+                                       "Maximum Likelihood" = "ML"
+                                     ),
+                                     selected = "REML"),
+                         helpText("REML is recommended for most meta-analyses")
+                  ),
                   
-                  conditionalPanel(
-                    condition = "input.use_che_model == true",
-                    sliderInput("assumed_rho", 
-                              "Assumed within-study correlation (ρ):",
-                              min = 0, max = 0.95, value = 0.5, step = 0.05),
-                    
-                    div(class = "info-box-dependency",
-                      icon("info-circle"), 
-                      HTML("<strong>What is ρ (rho)?</strong><br>
+                  column(3,
+                         h4("Statistical Test", style = "margin-top: 0;"),
+                         selectInput("test_type", "Test type:",
+                                     choices = c(
+                                       "Knapp-Hartung" = "knha",
+                                       "z-test" = "z"
+                                     ),
+                                     selected = "knha"),
+                         helpText("Knapp-Hartung adjusts for uncertainty in τ²")
+                  ),
+                  
+                  column(3,
+                         h4("Multi-level Model", style = "margin-top: 0;"),
+                         checkboxInput("use_multilevel", 
+                                       "Use 3-level model (StudyID/EffectID)",
+                                       value = FALSE),
+                         helpText("Enable when multiple outcomes per study")
+                  ),
+                  
+                  column(3,
+                         br(),
+                         div(style = "background: #e3f2fd; padding: 10px; border-radius: 5px; margin-top: 15px;",
+                             p(style = "margin: 0; font-size: 12px;",
+                               icon("info-circle"),
+                               " Settings apply when you click 'Update Plot' below.")
+                         )
+                  )
+                ),
+                
+                # === NEW: DEPENDENCY HANDLING OPTIONS ===
+                hr(style = "border-color: #ffc107; margin: 15px 0;"),
+                
+                fluidRow(
+                  column(12,
+                         h4(icon("link"), " Handling Dependent Effect Sizes", 
+                            style = "margin-top: 0; margin-bottom: 10px; color: #856404;"),
+                         p(style = "font-size: 12px; color: #666; margin-bottom: 15px;",
+                           "When the same participants contribute multiple outcomes (e.g., strength AND size from the same 8 people), ",
+                           "their effect sizes share sampling error. These options handle this dependency.")
+                  )
+                ),
+                
+                fluidRow(
+                  column(4,
+                         # CHE MODEL OPTION
+                         checkboxInput("use_che_model", 
+                                       strong("Use CHE working model (vcalc)"),
+                                       value = FALSE),
+                         
+                         conditionalPanel(
+                           condition = "input.use_che_model == true",
+                           sliderInput("assumed_rho", 
+                                       "Assumed within-study correlation (ρ):",
+                                       min = 0, max = 0.95, value = 0.5, step = 0.05),
+                           
+                           div(class = "info-box-dependency",
+                               icon("info-circle"), 
+                               HTML("<strong>What is ρ (rho)?</strong><br>
                            The correlation between effect sizes from the same study/participants. 
                            When participants contribute to multiple outcomes, their sampling errors are correlated.<br><br>
                            <strong>Guidance:</strong><br>
                            • ρ = 0.5 is a reasonable default<br>
                            • Higher (0.6-0.8) for very similar outcomes<br>
                            • Lower (0.3-0.5) for different outcome types")
-                    )
-                  )
-                ),
-                
-                column(4,
-                  # ROBUST VARIANCE ESTIMATION OPTION
-                  checkboxInput("use_robust_ve", 
-                              strong("Use robust variance estimation"),
-                              value = FALSE),
+                           )
+                         )
+                  ),
                   
-                  conditionalPanel(
-                    condition = "input.use_robust_ve == true",
-                    
-                    div(class = "info-box-dependency",
-                      icon("shield-alt"), 
-                      HTML("<strong>What is robust VE?</strong><br>
+                  column(4,
+                         # ROBUST VARIANCE ESTIMATION OPTION
+                         checkboxInput("use_robust_ve", 
+                                       strong("Use robust variance estimation"),
+                                       value = FALSE),
+                         
+                         conditionalPanel(
+                           condition = "input.use_robust_ve == true",
+                           
+                           div(class = "info-box-dependency",
+                               icon("shield-alt"), 
+                               HTML("<strong>What is robust VE?</strong><br>
                            Cluster-robust standard errors (using clubSandwich) protect against 
                            misspecification of the dependency structure.<br><br>
                            <strong>Key benefit:</strong> Even if your assumed ρ is wrong, 
                            statistical inference remains valid.<br><br>
                            <em>Recommended when you have multiple effect sizes per study.</em>")
-                    )
-                  )
-                ),
-                
-                column(4,
-                  # SENSITIVITY ANALYSIS OPTION
-                  checkboxInput("run_rho_sensitivity", 
-                              strong("Run sensitivity analysis"),
-                              value = FALSE),
+                           )
+                         )
+                  ),
                   
-                  conditionalPanel(
-                    condition = "input.run_rho_sensitivity == true",
-                    
-                    div(class = "info-box-dependency",
-                      icon("chart-line"), 
-                      HTML("<strong>What is sensitivity analysis?</strong><br>
+                  column(4,
+                         # SENSITIVITY ANALYSIS OPTION
+                         checkboxInput("run_rho_sensitivity", 
+                                       strong("Run sensitivity analysis"),
+                                       value = FALSE),
+                         
+                         conditionalPanel(
+                           condition = "input.run_rho_sensitivity == true",
+                           
+                           div(class = "info-box-dependency",
+                               icon("chart-line"), 
+                               HTML("<strong>What is sensitivity analysis?</strong><br>
                            Tests whether conclusions change with different assumed ρ values 
                            (0.0, 0.3, 0.5, 0.7, 0.9).<br><br>
                            <strong>Interpretation:</strong> If estimates and CIs are stable 
                            across ρ values, your findings are robust to the correlation assumption.")
-                    )
+                           )
+                         )
                   )
                 )
-              )
             ),
             
             # RUN ANALYSIS BUTTON
             hr(style = "border-color: #ffc107; margin: 15px 0;"),
             div(style = "text-align: center;",
-              actionButton("run_analysis", 
-                         HTML("<i class='fa fa-play'></i> Run Meta-Analysis"),
-                         class = "btn-warning btn-lg",
-                         style = "font-size: 16px; padding: 12px 30px;"),
-              p(style = "margin-top: 10px; color: #666; font-size: 12px;",
-                "Click after configuring model settings above. Required for CHE model and sensitivity analysis.")
+                actionButton("run_analysis", 
+                             HTML("<i class='fa fa-play'></i> Run Meta-Analysis"),
+                             class = "btn-warning btn-lg",
+                             style = "font-size: 16px; padding: 12px 30px;"),
+                p(style = "margin-top: 10px; color: #666; font-size: 12px;",
+                  "Click after configuring model settings above. Required for CHE model and sensitivity analysis.")
             )
           )
         ),
@@ -474,90 +474,90 @@ ui <- dashboardPage(
             
             fluidRow(
               column(3,
-                div(class = "control-section",
-                  h4("Data Type", style = "margin-top: 0;"),
-                  radioButtons("forest_data_type", NULL,
-                             choices = c(
-                               "Arm-level effects" = "arm",
-                               "Between-group differences" = "diff"
-                             ),
-                             selected = "arm"),
-                  
-                  # Conditional panel for between-group options
-                  conditionalPanel(
-                    condition = "input.forest_data_type == 'diff'",
-                    hr(style = "margin: 8px 0;"),
-                    
-                    # Group selection
-                    selectInput("diff_group1", "Treatment group:", choices = c()),
-                    selectInput("diff_group2", "Control group:", choices = c()),
-                    
-                    # Treatment subgroup variable (e.g., Training_Type)
-                    selectInput("diff_treatment_subgroup", "Split treatment by:",
-                               choices = c("(none)" = ""),
-                               selected = ""),
-                    helpText(style = "font-size: 10px;", 
-                            "e.g., Training_Type to show Isometric vs Control and Concentric vs Control separately"),
-                    
-                    hr(style = "margin: 8px 0;"),
-                    
-                    radioButtons("diff_aggregation", "Difference calculation:",
-                               choices = c(
-                                 "One per study (averaged)" = "averaged",
-                                 "Multiple per study (by outcome)" = "multiple"
-                               ),
-                               selected = "averaged"),
-                    
-                    # Matching variables for multiple differences
-                    conditionalPanel(
-                      condition = "input.diff_aggregation == 'multiple'",
-                      selectInput("diff_match_vars", "Match outcomes by:",
-                                choices = c(),
-                                multiple = TRUE),
-                      helpText(style = "font-size: 10px;", 
-                              "Select columns that define unique outcomes (e.g., Measure, Muscle_Group)")
-                    )
-                  )
-                )
+                     div(class = "control-section",
+                         h4("Data Type", style = "margin-top: 0;"),
+                         radioButtons("forest_data_type", NULL,
+                                      choices = c(
+                                        "Arm-level effects" = "arm",
+                                        "Between-group differences" = "diff"
+                                      ),
+                                      selected = "arm"),
+                         
+                         # Conditional panel for between-group options
+                         conditionalPanel(
+                           condition = "input.forest_data_type == 'diff'",
+                           hr(style = "margin: 8px 0;"),
+                           
+                           # Group selection
+                           selectInput("diff_group1", "Treatment group:", choices = c()),
+                           selectInput("diff_group2", "Control group:", choices = c()),
+                           
+                           # Treatment subgroup variable (e.g., Training_Type)
+                           selectInput("diff_treatment_subgroup", "Split treatment by:",
+                                       choices = c("(none)" = ""),
+                                       selected = ""),
+                           helpText(style = "font-size: 10px;", 
+                                    "e.g., Training_Type to show Isometric vs Control and Concentric vs Control separately"),
+                           
+                           hr(style = "margin: 8px 0;"),
+                           
+                           radioButtons("diff_aggregation", "Difference calculation:",
+                                        choices = c(
+                                          "One per study (averaged)" = "averaged",
+                                          "Multiple per study (by outcome)" = "multiple"
+                                        ),
+                                        selected = "averaged"),
+                           
+                           # Matching variables for multiple differences
+                           conditionalPanel(
+                             condition = "input.diff_aggregation == 'multiple'",
+                             selectInput("diff_match_vars", "Match outcomes by:",
+                                         choices = c(),
+                                         multiple = TRUE),
+                             helpText(style = "font-size: 10px;", 
+                                      "Select columns that define unique outcomes (e.g., Measure, Muscle_Group)")
+                           )
+                         )
+                     )
               ),
               
               column(3,
-                div(class = "control-section",
-                  h4("Visual Style", style = "margin-top: 0;"),
-                  selectInput("forest_style", "Style:",
-                           choices = c(
-                             "Classic" = "classic",
-                             "With distributions" = "distribution"
-                           )),
-                  checkboxInput("show_ci_band", "Show CI band", value = TRUE),
-                  checkboxInput("show_summary_stats", "Show summary stats below", value = TRUE)
-                )
+                     div(class = "control-section",
+                         h4("Visual Style", style = "margin-top: 0;"),
+                         selectInput("forest_style", "Style:",
+                                     choices = c(
+                                       "Classic" = "classic",
+                                       "With distributions" = "distribution"
+                                     )),
+                         checkboxInput("show_ci_band", "Show CI band", value = TRUE),
+                         checkboxInput("show_summary_stats", "Show summary stats below", value = TRUE)
+                     )
               ),
               
               column(3,
-                div(class = "control-section",
-                  h4("Distributions", style = "margin-top: 0;"),
-                  conditionalPanel(
-                    condition = "input.forest_style == 'distribution'",
-                    checkboxInput("show_shaded_dist", "Shaded areas", value = TRUE),
-                    sliderInput("dist_transparency", "Transparency:",
-                              min = 0.1, max = 1, value = 0.4, step = 0.05),
-                    sliderInput("dist_width", "Width:",
-                              min = 0.2, max = 1.5, value = 0.8, step = 0.1)
-                  )
-                )
+                     div(class = "control-section",
+                         h4("Distributions", style = "margin-top: 0;"),
+                         conditionalPanel(
+                           condition = "input.forest_style == 'distribution'",
+                           checkboxInput("show_shaded_dist", "Shaded areas", value = TRUE),
+                           sliderInput("dist_transparency", "Transparency:",
+                                       min = 0.1, max = 1, value = 0.4, step = 0.05),
+                           sliderInput("dist_width", "Width:",
+                                       min = 0.2, max = 1.5, value = 0.8, step = 0.1)
+                         )
+                     )
               ),
               
               column(3,
-                div(class = "control-section",
-                  h4("Appearance", style = "margin-top: 0;"),
-                  colourInput("forest_color", "Line color:", value = "#1b9e77"),
-                  colourInput("forest_fill_color", "Fill color:", value = "#1b9e77"),
-                  sliderInput("row_spacing", "Row spacing:",
-                            min = 0.3, max = 2, value = 1, step = 0.1),
-                  sliderInput("forest_text_size", "Text size:",
-                            min = 8, max = 24, value = 16)
-                )
+                     div(class = "control-section",
+                         h4("Appearance", style = "margin-top: 0;"),
+                         colourInput("forest_color", "Line color:", value = "#1b9e77"),
+                         colourInput("forest_fill_color", "Fill color:", value = "#1b9e77"),
+                         sliderInput("row_spacing", "Row spacing:",
+                                     min = 0.3, max = 2, value = 1, step = 0.1),
+                         sliderInput("forest_text_size", "Text size:",
+                                     min = 8, max = 24, value = 16)
+                     )
               )
             ),
             
@@ -565,38 +565,38 @@ ui <- dashboardPage(
             
             fluidRow(
               column(3,
-                div(class = "control-section",
-                  h4("Plot Annotations", style = "margin-top: 0;"),
-                  checkboxInput("show_effect_values", "Show effect sizes", value = TRUE),
-                  checkboxInput("show_ci_values", "Show CIs", value = TRUE),
-                  checkboxInput("show_weights", "Show weights", value = TRUE),
-                  checkboxInput("show_overall_diamond", "Show overall diamond", value = TRUE),
-                  checkboxInput("show_overall_pvalue", "Show overall p-value", value = TRUE),
-                  checkboxInput("show_group_diamonds", "Show group diamonds", value = TRUE),
-                  
-                  hr(style = "margin: 8px 0;"),
-                  
-                  checkboxInput("show_study_details", "Show study details", value = FALSE),
-                  conditionalPanel(
-                    condition = "input.show_study_details",
-                    selectInput("detail_vars", "Detail variables:",
-                               choices = c(), multiple = TRUE),
-                    helpText("Add variables to show in study labels (e.g., Muscle_Group, Measure)")
-                  )
-                )
+                     div(class = "control-section",
+                         h4("Plot Annotations", style = "margin-top: 0;"),
+                         checkboxInput("show_effect_values", "Show effect sizes", value = TRUE),
+                         checkboxInput("show_ci_values", "Show CIs", value = TRUE),
+                         checkboxInput("show_weights", "Show weights", value = TRUE),
+                         checkboxInput("show_overall_diamond", "Show overall diamond", value = TRUE),
+                         checkboxInput("show_overall_pvalue", "Show overall p-value", value = TRUE),
+                         checkboxInput("show_group_diamonds", "Show group diamonds", value = TRUE),
+                         
+                         hr(style = "margin: 8px 0;"),
+                         
+                         checkboxInput("show_study_details", "Show study details", value = FALSE),
+                         conditionalPanel(
+                           condition = "input.show_study_details",
+                           selectInput("detail_vars", "Detail variables:",
+                                       choices = c(), multiple = TRUE),
+                           helpText("Add variables to show in study labels (e.g., Muscle_Group, Measure)")
+                         )
+                     )
               ),
               
               column(3,
-                div(class = "control-section",
-                  h4("Line Appearance", style = "margin-top: 0;"),
-                  sliderInput("ci_line_thickness", "CI line thickness:",
-                            min = 0.3, max = 2, value = 0.5, step = 0.1),
-                  sliderInput("point_outline_thickness", "Point outline:",
-                            min = 0.3, max = 2, value = 0.8, step = 0.1),
-                  sliderInput("line_darkness", "Line darkness:",
-                            min = 0.3, max = 1, value = 1, step = 0.1),
-                  helpText("Higher = darker, lower = lighter")
-                )
+                     div(class = "control-section",
+                         h4("Line Appearance", style = "margin-top: 0;"),
+                         sliderInput("ci_line_thickness", "CI line thickness:",
+                                     min = 0.3, max = 2, value = 0.5, step = 0.1),
+                         sliderInput("point_outline_thickness", "Point outline:",
+                                     min = 0.3, max = 2, value = 0.8, step = 0.1),
+                         sliderInput("line_darkness", "Line darkness:",
+                                     min = 0.3, max = 1, value = 1, step = 0.1),
+                         helpText("Higher = darker, lower = lighter")
+                     )
               ),
               
               column(3,
@@ -641,15 +641,15 @@ ui <- dashboardPage(
             conditionalPanel(
               condition = "input.show_summary_stats",
               div(class = "summary-stats-box",
-                h4(icon("chart-bar"), " Meta-Analysis Summary Statistics"),
-                fluidRow(
-                  column(6,
-                    verbatimTextOutput("forest_summary_stats")
-                  ),
-                  column(6,
-                    verbatimTextOutput("forest_heterogeneity_stats")
+                  h4(icon("chart-bar"), " Meta-Analysis Summary Statistics"),
+                  fluidRow(
+                    column(6,
+                           verbatimTextOutput("forest_summary_stats")
+                    ),
+                    column(6,
+                           verbatimTextOutput("forest_heterogeneity_stats")
+                    )
                   )
-                )
               )
             ),
             
@@ -657,15 +657,15 @@ ui <- dashboardPage(
             conditionalPanel(
               condition = "input.run_rho_sensitivity",
               div(class = "sensitivity-box",
-                h4(icon("chart-line"), " Sensitivity Analysis: Effect of Assumed ρ"),
-                verbatimTextOutput("sensitivity_output")
+                  h4(icon("chart-line"), " Sensitivity Analysis: Effect of Assumed ρ"),
+                  verbatimTextOutput("sensitivity_output")
               )
             ),
             
             hr(),
             
             downloadButton("download_enhanced_forest", "Download Plot",
-                         class = "btn-primary")
+                           class = "btn-primary")
           )
         )
       ),
@@ -703,9 +703,9 @@ ui <- dashboardPage(
             conditionalPanel(
               condition = "input.label_funnel",
               sliderInput("label_size", "Label size:",
-                        min = 0.3, max = 1.2, value = 0.7, step = 0.1),
+                          min = 0.3, max = 1.2, value = 0.7, step = 0.1),
               numericInput("max_funnel_labels", "Max labels:",
-                         value = 50, min = 5, max = 200)
+                           value = 50, min = 5, max = 200)
             ),
             
             hr(),
@@ -720,15 +720,15 @@ ui <- dashboardPage(
               
               # Trim-and-fill option (only shown after Egger's test)
               checkboxInput("run_trimfill", 
-                          "Run Duval & Tweedie's trim-and-fill if Egger's test is significant", 
-                          value = TRUE),
+                            "Run Duval & Tweedie's trim-and-fill if Egger's test is significant", 
+                            value = TRUE),
               
               conditionalPanel(
                 condition = "input.run_trimfill",
                 selectInput("trimfill_side", "Trim-and-fill side:",
-                          choices = c("Left (suppress positive)" = "left",
-                                     "Right (suppress negative)" = "right"),
-                          selected = "left"),
+                            choices = c("Left (suppress positive)" = "left",
+                                        "Right (suppress negative)" = "right"),
+                            selected = "left"),
                 helpText("'Left' assumes small studies with small/negative effects are missing. 
                          'Right' assumes small studies with large/positive effects are missing.")
               )
@@ -739,14 +739,14 @@ ui <- dashboardPage(
               condition = "input.run_egger && input.run_trimfill",
               hr(),
               div(id = "trimfill_results_box",
-                uiOutput("trimfill_results_ui")
+                  uiOutput("trimfill_results_ui")
               )
             ),
             
             hr(),
             
             actionButton("update_funnel", "Update Plot",
-                       class = "btn-warning", icon = icon("refresh"))
+                         class = "btn-warning", icon = icon("refresh"))
           )
         )
       ),
@@ -767,25 +767,25 @@ ui <- dashboardPage(
             
             fluidRow(
               column(4,
-                checkboxInput("include_methods", "Include Methods section", value = TRUE),
-                checkboxInput("include_results", "Include Results section", value = TRUE),
-                checkboxInput("include_references", "Include statistical references", value = TRUE)
+                     checkboxInput("include_methods", "Include Methods section", value = TRUE),
+                     checkboxInput("include_results", "Include Results section", value = TRUE),
+                     checkboxInput("include_references", "Include statistical references", value = TRUE)
               ),
               column(4,
-                selectInput("writeup_format", "Output format:",
-                          choices = c("Plain text" = "txt",
-                                     "Markdown" = "md",
-                                     "Word document" = "docx")),
-                selectInput("citation_style", "Citation style:",
-                          choices = c("APA 7th" = "apa",
-                                     "Vancouver" = "vancouver"))
+                     selectInput("writeup_format", "Output format:",
+                                 choices = c("Plain text" = "txt",
+                                             "Markdown" = "md",
+                                             "Word document" = "docx")),
+                     selectInput("citation_style", "Citation style:",
+                                 choices = c("APA 7th" = "apa",
+                                             "Vancouver" = "vancouver"))
               ),
               column(4,
-                br(),
-                actionButton("generate_writeup", "Generate Write-Up", 
-                           class = "btn-success btn-lg", icon = icon("file-alt")),
-                br(), br(),
-                downloadButton("download_writeup", "Download Write-Up", class = "btn-primary")
+                     br(),
+                     actionButton("generate_writeup", "Generate Write-Up", 
+                                  class = "btn-success btn-lg", icon = icon("file-alt")),
+                     br(), br(),
+                     downloadButton("download_writeup", "Download Write-Up", class = "btn-primary")
               )
             ),
             
@@ -793,7 +793,7 @@ ui <- dashboardPage(
             
             h4("Preview:"),
             div(style = "max-height: 500px; overflow-y: auto; background: #f9f9f9; padding: 15px; border-radius: 5px; border: 1px solid #ddd;",
-              uiOutput("writeup_preview")
+                uiOutput("writeup_preview")
             )
           )
         ),
@@ -817,7 +817,7 @@ ui <- dashboardPage(
             width = 6,
             
             selectInput("plot_format", "Format:",
-                       choices = c("PDF" = "pdf", "PNG" = "png")),
+                        choices = c("PDF" = "pdf", "PNG" = "png")),
             
             conditionalPanel(
               condition = "input.plot_format == 'png'",
@@ -900,48 +900,48 @@ server <- function(input, output, session) {
       
       # Define search patterns (in priority order)
       studyid_patterns <- c("^studyid$", "^study_id$", "study.?id", "^author$", 
-                           "first.?author", "citation", "^id$")
+                            "first.?author", "citation", "^id$")
       mean1_patterns <- c("post.?mean", "mean.?post", "mean.?1", "m1i?$", 
-                         "follow.?up.?mean", "end.?mean", "final.?mean")
+                          "follow.?up.?mean", "end.?mean", "final.?mean")
       mean2_patterns <- c("pre.?mean", "mean.?pre", "mean.?2", "m2i?$", 
-                         "baseline.?mean", "initial.?mean", "start.?mean")
+                          "baseline.?mean", "initial.?mean", "start.?mean")
       sd1_patterns <- c("post.?std", "post.?sd", "std.?post", "sd.?post", 
-                       "sd.?1", "s1", "follow.?up.?sd", "end.?sd")
+                        "sd.?1", "s1", "follow.?up.?sd", "end.?sd")
       sd2_patterns <- c("pre.?std", "pre.?sd", "std.?pre", "sd.?pre", 
-                       "sd.?2", "s2", "baseline.?sd", "initial.?sd")
+                        "sd.?2", "s2", "baseline.?sd", "initial.?sd")
       n_patterns <- c("^n$", "^sample.?size$", "sample.?n", "n.?total", 
-                     "n1i?$", "participants", "subjects")
+                      "n1i?$", "participants", "subjects")
       group_patterns <- c("^group$", "^arm$", "condition", "intervention", 
-                         "treatment", "^tx$")
+                          "treatment", "^tx$")
       corr_patterns <- c("^r$", "^corr", "correlation", "pre.?post.?r", 
-                        "r.?pre.?post", "^r_")
+                         "r.?pre.?post", "^r_")
       change_sd_patterns <- c("change.?sd", "sd.?change", "std.?change", 
-                             "change.?std", "sd.?diff", "diff.?sd")
+                              "change.?std", "sd.?diff", "diff.?sd")
       
       # Auto-detect and update selectors
       updateSelectInput(session, "studyid_col", choices = cols,
-                       selected = auto_detect(studyid_patterns, cols, must_exist = TRUE))
+                        selected = auto_detect(studyid_patterns, cols, must_exist = TRUE))
       updateSelectInput(session, "mean1_col", choices = cols,
-                       selected = auto_detect(mean1_patterns, cols, must_exist = TRUE))
+                        selected = auto_detect(mean1_patterns, cols, must_exist = TRUE))
       updateSelectInput(session, "mean2_col", choices = cols,
-                       selected = auto_detect(mean2_patterns, cols, must_exist = TRUE))
+                        selected = auto_detect(mean2_patterns, cols, must_exist = TRUE))
       updateSelectInput(session, "sd1_col", choices = cols,
-                       selected = auto_detect(sd1_patterns, cols, must_exist = TRUE))
+                        selected = auto_detect(sd1_patterns, cols, must_exist = TRUE))
       updateSelectInput(session, "sd2_col", choices = cols,
-                       selected = auto_detect(sd2_patterns, cols, must_exist = TRUE))
+                        selected = auto_detect(sd2_patterns, cols, must_exist = TRUE))
       updateSelectInput(session, "n_col", choices = cols,
-                       selected = auto_detect(n_patterns, cols, must_exist = TRUE))
+                        selected = auto_detect(n_patterns, cols, must_exist = TRUE))
       updateSelectInput(session, "corr_col", choices = c("", cols),
-                       selected = auto_detect(corr_patterns, cols))
+                        selected = auto_detect(corr_patterns, cols))
       updateSelectInput(session, "change_sd_col", choices = c("", cols),
-                       selected = auto_detect(change_sd_patterns, cols))
+                        selected = auto_detect(change_sd_patterns, cols))
       updateSelectInput(session, "group_col", choices = c("(none)" = "", cols),
-                       selected = auto_detect(group_patterns, cols))
+                        selected = auto_detect(group_patterns, cols))
       updateSelectInput(session, "cat_var_to_add", choices = values$available_cat_vars)
       
       # Update detail variables selector (for forest plot labels)
       detail_candidates <- setdiff(cols, c(input$studyid_col, input$mean1_col, input$mean2_col,
-                                          input$sd1_col, input$sd2_col, input$n_col))
+                                           input$sd1_col, input$sd2_col, input$n_col))
       updateSelectInput(session, "detail_vars", choices = detail_candidates)
       
       # Show notification with detection results
@@ -950,13 +950,13 @@ server <- function(input, output, session) {
         paste("Mean 1:", auto_detect(mean1_patterns, cols, must_exist = TRUE)),
         paste("Mean 2:", auto_detect(mean2_patterns, cols, must_exist = TRUE)),
         paste("Group:", ifelse(auto_detect(group_patterns, cols) == "", "Not detected", 
-                              auto_detect(group_patterns, cols)))
+                               auto_detect(group_patterns, cols)))
       )
       
       showNotification(
         HTML(paste("Data loaded with auto-detected columns:<br>", 
-                  paste(detected_cols, collapse = "<br>"),
-                  "<br><br>Please verify column mappings before calculating.")),
+                   paste(detected_cols, collapse = "<br>"),
+                   "<br><br>Please verify column mappings before calculating.")),
         type = "message",
         duration = 10
       )
@@ -1001,9 +1001,9 @@ server <- function(input, output, session) {
     
     if(length(values$active_filter_vars) == 0) {
       return(div(style = "padding: 20px; text-align: center;",
-        p("No active filters.", style = "color: #999; font-style: italic;"),
-        p("Select a variable above and click 'Add Variable' to start filtering.", 
-          style = "color: #999; font-size: 12px;")
+                 p("No active filters.", style = "color: #999; font-style: italic;"),
+                 p("Select a variable above and click 'Add Variable' to start filtering.", 
+                   style = "color: #999; font-size: 12px;")
       ))
     }
     
@@ -1013,44 +1013,44 @@ server <- function(input, output, session) {
       choices <- sort(unique(na.omit(values$raw_data[[var]])))
       
       div(class = "filter-box",
-        # Header with variable name and remove button
-        div(style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;",
-          h5(style = "margin: 0; color: #333; font-weight: bold;", var),
-          actionButton(paste0("remove_", var), "Remove",
-                     class = "btn-danger btn-sm", 
-                     icon = icon("times"),
-                     style = "font-size: 11px; padding: 2px 8px;")
-        ),
-        
-        # Instructions
-        div(style = "margin-bottom: 8px; color: #666; font-size: 12px;",
-          HTML("<strong>Select values to INCLUDE</strong> (uncheck to exclude):")
-        ),
-        
-        # All/None buttons
-        div(style = "margin-bottom: 10px;",
-          div(class = "btn-group btn-group-sm", role = "group",
-            actionButton(paste0("select_all_", var), 
-                       HTML("<i class='fa fa-check-square'></i> All"), 
-                       class = "btn-default btn-sm",
-                       style = "font-size: 11px;"),
-            actionButton(paste0("select_none_", var), 
-                       HTML("<i class='fa fa-square-o'></i> None"), 
-                       class = "btn-default btn-sm",
-                       style = "font-size: 11px;")
+          # Header with variable name and remove button
+          div(style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;",
+              h5(style = "margin: 0; color: #333; font-weight: bold;", var),
+              actionButton(paste0("remove_", var), "Remove",
+                           class = "btn-danger btn-sm", 
+                           icon = icon("times"),
+                           style = "font-size: 11px; padding: 2px 8px;")
           ),
-          span(style = "margin-left: 10px; color: #999; font-size: 11px;",
-            paste0("(", length(choices), " values)"))
-        ),
-        
-        # Checkboxes for values
-        div(style = "background: white; padding: 10px; border-radius: 3px; border: 1px solid #ddd;",
-          checkboxGroupInput(paste0("filter_cat_", var), 
-                            label = NULL,
-                            choices = choices, 
-                            selected = choices, 
-                            inline = TRUE)
-        )
+          
+          # Instructions
+          div(style = "margin-bottom: 8px; color: #666; font-size: 12px;",
+              HTML("<strong>Select values to INCLUDE</strong> (uncheck to exclude):")
+          ),
+          
+          # All/None buttons
+          div(style = "margin-bottom: 10px;",
+              div(class = "btn-group btn-group-sm", role = "group",
+                  actionButton(paste0("select_all_", var), 
+                               HTML("<i class='fa fa-check-square'></i> All"), 
+                               class = "btn-default btn-sm",
+                               style = "font-size: 11px;"),
+                  actionButton(paste0("select_none_", var), 
+                               HTML("<i class='fa fa-square-o'></i> None"), 
+                               class = "btn-default btn-sm",
+                               style = "font-size: 11px;")
+              ),
+              span(style = "margin-left: 10px; color: #999; font-size: 11px;",
+                   paste0("(", length(choices), " values)"))
+          ),
+          
+          # Checkboxes for values
+          div(style = "background: white; padding: 10px; border-radius: 3px; border: 1px solid #ddd;",
+              checkboxGroupInput(paste0("filter_cat_", var), 
+                                 label = NULL,
+                                 choices = choices, 
+                                 selected = choices, 
+                                 inline = TRUE)
+          )
       )
     })
     
@@ -1069,12 +1069,12 @@ server <- function(input, output, session) {
           if(var_local %in% names(values$raw_data)) {
             all_choices <- sort(unique(na.omit(values$raw_data[[var_local]])))
             updateCheckboxGroupInput(session, paste0("filter_cat_", var_local),
-                                    selected = all_choices)
+                                     selected = all_choices)
           }
         })
         observeEvent(input[[paste0("select_none_", var_local)]], {
           updateCheckboxGroupInput(session, paste0("filter_cat_", var_local),
-                                  selected = character(0))
+                                   selected = character(0))
         })
       })
     }
@@ -1117,7 +1117,7 @@ server <- function(input, output, session) {
       cat("None\n")
     } else {
       cat(paste0(seq_along(values$active_filter_vars), ". ", 
-                values$active_filter_vars, "\n"), sep = "")
+                 values$active_filter_vars, "\n"), sep = "")
     }
   })
   
@@ -1188,10 +1188,10 @@ server <- function(input, output, session) {
     req(values$missing_data_report)
     if(values$missing_data_report$total_missing > 0) {
       div(class = "missing-data-warning",
-        h4(icon("exclamation-triangle"), " Missing Data Detected"),
-        p(strong(values$missing_data_report$total_missing), " missing values found."),
-        p(if(input$auto_remove_missing) "Incomplete rows will be removed." 
-          else HTML("<span style='color: red;'>Calculation will fail.</span>"))
+          h4(icon("exclamation-triangle"), " Missing Data Detected"),
+          p(strong(values$missing_data_report$total_missing), " missing values found."),
+          p(if(input$auto_remove_missing) "Incomplete rows will be removed." 
+            else HTML("<span style='color: red;'>Calculation will fail.</span>"))
       )
     }
   })
@@ -1233,7 +1233,7 @@ server <- function(input, output, session) {
       if(n_incomplete > 0) {
         if(input$auto_remove_missing) {
           showNotification(paste("Removing", n_incomplete, "rows with missing data..."), 
-                          type = "warning", duration = 5)
+                           type = "warning", duration = 5)
           data <- data[required_complete, ]
           studyid <- studyid[required_complete]
           mean1 <- mean1[required_complete]
@@ -1268,13 +1268,13 @@ server <- function(input, output, session) {
       # Calculate
       if(input$es_type == "SMCR") {
         es_result <- escalc(measure = "SMCR", m1i = mean1, m2i = mean2,
-                          sd1i = sd1, ni = n, ri = r_prepost, data = data)
+                            sd1i = sd1, ni = n, ri = r_prepost, data = data)
       } else if(input$es_type == "SMD") {
         es_result <- escalc(measure = "SMD", m1i = mean1, m2i = mean2,
-                          sd1i = sd1, sd2i = sd2, n1i = n, n2i = n, data = data)
+                            sd1i = sd1, sd2i = sd2, n1i = n, n2i = n, data = data)
       } else if(input$es_type == "MD") {
         es_result <- escalc(measure = "MD", m1i = mean1, m2i = mean2,
-                          sd1i = sd1, ni = n, data = data)
+                            sd1i = sd1, ni = n, data = data)
       }
       
       if(input$apply_hedges) {
@@ -1303,7 +1303,7 @@ server <- function(input, output, session) {
       values$es_data <- as.data.frame(es_result)
       
       showNotification(paste("✓ Calculated", nrow(es_result), "effect sizes!"), 
-                      type = "message", duration = 5)
+                       type = "message", duration = 5)
       
     }, error = function(e) {
       showNotification(paste("Error:", e$message), type = "error", duration = 15)
@@ -1420,7 +1420,7 @@ server <- function(input, output, session) {
                       choices = subgroup_choices,
                       selected = "")  # Don't auto-select, let user choose
   })
-
+  
   # =================== BASIC META-ANALYSIS ===================================
   
   observeEvent(input$run_analysis, {
@@ -1432,7 +1432,7 @@ server <- function(input, output, session) {
       }
       if(!"StudyGroup" %in% names(values$es_data)) {
         values$es_data$StudyGroup <- paste(values$es_data$StudyID, 
-                                            values$es_data$Group, sep = "_")
+                                           values$es_data$Group, sep = "_")
       }
       
       # DETERMINE IF THREE-LEVEL MODEL IS NEEDED
@@ -1797,7 +1797,7 @@ server <- function(input, output, session) {
   output$forest_basic <- renderPlot({
     req(values$ma_model, values$es_data)
     forest(values$ma_model, slab = paste(values$es_data$StudyID, values$es_data$Group, sep = " - "),
-          xlab = "Effect Size")
+           xlab = "Effect Size")
   })
   
   # =================== ENHANCED FOREST PLOT ==================================
@@ -1886,6 +1886,10 @@ server <- function(input, output, session) {
         )
       }
       
+      # Store forest data for publication bias tests (CRITICAL FIX)
+      values$forest_data <- data
+      values$forest_data_type <- input$forest_data_type
+      
       list(data = data, model = model, 
            plot_title = "Forest Plot: Arm-Level Effects",
            subtitle = "Each row shows one arm's effect size")
@@ -1894,7 +1898,7 @@ server <- function(input, output, session) {
       # Between-group differences
       if(!"Group" %in% names(values$es_data) || length(unique(values$es_data$Group)) < 2) {
         showNotification("Cannot compute between-group differences: No Group variable or <2 groups", 
-                        type = "error", duration = 10)
+                         type = "error", duration = 10)
         return(NULL)
       }
       
@@ -1922,7 +1926,7 @@ server <- function(input, output, session) {
           
           if(is.na(control_group) || is.na(training_group)) {
             showNotification("Please select Treatment and Control groups from the dropdowns.", 
-                            type = "error", duration = 10)
+                             type = "error", duration = 10)
             return(NULL)
           }
           
@@ -1934,15 +1938,15 @@ server <- function(input, output, session) {
       # Verify selected groups exist in data
       if(!(group1 %in% values$es_data$Group) || !(group2 %in% values$es_data$Group)) {
         showNotification("Selected groups not found in data.", 
-                        type = "error", duration = 10)
+                         type = "error", duration = 10)
         return(NULL)
       }
       
       # CHECK FOR TREATMENT SUBGROUP VARIABLE (e.g., Training_Type)
       treatment_subgroup_var <- input$diff_treatment_subgroup
       use_treatment_subgroup <- !is.null(treatment_subgroup_var) && 
-                                 treatment_subgroup_var != "" && 
-                                 treatment_subgroup_var %in% names(values$es_data)
+        treatment_subgroup_var != "" && 
+        treatment_subgroup_var %in% names(values$es_data)
       
       # Check aggregation method
       use_multiple <- !is.null(input$diff_aggregation) && input$diff_aggregation == "multiple"
@@ -2046,7 +2050,7 @@ server <- function(input, output, session) {
         
         if(nrow(merged_data) == 0) {
           showNotification("No matching pairs found between treatment and control groups", 
-                          type = "error", duration = 10)
+                           type = "error", duration = 10)
           return(NULL)
         }
         
@@ -2127,9 +2131,9 @@ server <- function(input, output, session) {
           )
         } else {
           model <- rma(yi = yi, vi = vi, 
-                      slab = label,  # Store labels for funnel plot
-                      data = data_wide, 
-                      method = input$ma_model, test = test_arg)
+                       slab = label,  # Store labels for funnel plot
+                       data = data_wide, 
+                       method = input$ma_model, test = test_arg)
         }
         
         plot_data <- data_wide
@@ -2144,6 +2148,10 @@ server <- function(input, output, session) {
         if(use_three_level) {
           subtitle_parts <- paste0(subtitle_parts, " [3-level model]")
         }
+        
+        # Store forest data for publication bias tests (CRITICAL FIX)
+        values$forest_data <- plot_data
+        values$forest_data_type <- input$forest_data_type
         
         list(data = plot_data, model = model,
              plot_title = "Forest Plot: Between-Group Differences",
@@ -2200,9 +2208,9 @@ server <- function(input, output, session) {
         
         test_arg <- ifelse(input$test_type == "knha", "knha", "z")
         model <- rma(yi = yi_diff, vi = vi_diff, 
-                    slab = label,  # Store labels for funnel plot
-                    data = data_wide, 
-                    method = input$ma_model, test = test_arg)
+                     slab = label,  # Store labels for funnel plot
+                     data = data_wide, 
+                     method = input$ma_model, test = test_arg)
         
         plot_data <- data.frame(
           StudyID = data_wide$StudyID,
@@ -2214,6 +2222,10 @@ server <- function(input, output, session) {
           ci_upper = data_wide$ci_upper,
           match_vars_used = ""  # No match vars when averaging
         )
+        
+        # Store forest data for publication bias tests (CRITICAL FIX)
+        values$forest_data <- plot_data
+        values$forest_data_type <- input$forest_data_type
         
         list(data = plot_data, model = model,
              plot_title = "Forest Plot: Between-Group Differences",
@@ -2252,8 +2264,8 @@ server <- function(input, output, session) {
        !is.null(group_var) && nzchar(group_var)) {
       # Suggest using TreatmentSubgroup instead
       showNotification(paste0("'", group_var, "' not available for between-group differences. ",
-                             "Try grouping by 'TreatmentSubgroup' if using split treatment."), 
-                      type = "warning", duration = 5)
+                              "Try grouping by 'TreatmentSubgroup' if using split treatment."), 
+                       type = "warning", duration = 5)
     }
     
     test_arg <- ifelse(input$test_type == "knha", "knha", "z")
@@ -2739,7 +2751,7 @@ server <- function(input, output, session) {
           }
           if (input$show_ci_values) {
             group_label_parts <- c(group_label_parts, 
-                                  sprintf("[%6.2f,%6.2f]", gm$ci.lb, gm$ci.ub))
+                                   sprintf("[%6.2f,%6.2f]", gm$ci.lb, gm$ci.ub))
           }
           if (input$show_overall_pvalue) {
             p_val <- gm$pval
@@ -2845,11 +2857,11 @@ server <- function(input, output, session) {
     
     # Check if TreatmentSubgroup is being used (split treatment by)
     has_treatment_subgroup <- "TreatmentSubgroup" %in% names(data) && 
-                              any(!is.na(data$TreatmentSubgroup))
+      any(!is.na(data$TreatmentSubgroup))
     
     # Check if OutcomeLabel has meaningful content (for header)
     has_outcome_details <- "OutcomeLabel" %in% names(data) &&
-                          any(!is.na(data$OutcomeLabel) & data$OutcomeLabel != "" & data$OutcomeLabel != "All")
+      any(!is.na(data$OutcomeLabel) & data$OutcomeLabel != "" & data$OutcomeLabel != "All")
     
     # Store for later use in y-axis setup
     # Headers will be added via y-axis labels and theme adjustments
@@ -3158,7 +3170,7 @@ server <- function(input, output, session) {
       # Create funnel plot
       if(input$contour_enhanced) {
         funnel(model_to_use, level = c(90, 95, 99), 
-              shade = c("white", "gray75", "gray60"), legend = TRUE)
+               shade = c("white", "gray75", "gray60"), legend = TRUE)
       } else {
         funnel(model_to_use)
       }
@@ -3215,17 +3227,46 @@ server <- function(input, output, session) {
     
     req(model_to_use)
     
+    # CRITICAL FIX: Use the forest plot data, not the raw es_data
+    # This ensures we're testing bias on the SAME effect sizes shown in the forest plot
+    data_for_bias <- if(!is.null(values$forest_data)) {
+      values$forest_data
+    } else {
+      values$es_data
+    }
+    
+    # Check if we're using between-group differences
+    is_between_group <- !is.null(values$forest_data_type) && 
+      values$forest_data_type == "diff"
+    
     if(inherits(model_to_use, "rma.mv")) {
-      # For three-level models, aggregate to one ES per study-group for bias tests
-      cat("Note: Using aggregated effect sizes for publication bias test\n")
-      cat("(One effect size per study-group)\n\n")
+      # For three-level models, aggregate to one ES per study for bias tests
+      if(is_between_group) {
+        cat("Note: Using aggregated between-group difference effect sizes\n")
+        cat("(One effect size per study)\n\n")
+      } else {
+        cat("Note: Using aggregated effect sizes for publication bias test\n")
+        cat("(One effect size per study-group)\n\n")
+      }
       
-      # Aggregate by taking the mean effect size per StudyGroup
-      agg_data <- values$es_data %>%
-        group_by(StudyGroup) %>%
+      # Aggregate by StudyID (for between-group) or StudyGroup (for arm-level)
+      group_var <- if(is_between_group) "StudyID" else "StudyGroup"
+      
+      # Make sure the grouping variable exists
+      if(!group_var %in% names(data_for_bias)) {
+        if("StudyID" %in% names(data_for_bias)) {
+          group_var <- "StudyID"
+        } else {
+          cat("Error: Cannot determine grouping variable for aggregation.\n")
+          return(NULL)
+        }
+      }
+      
+      agg_data <- data_for_bias %>%
+        group_by(.data[[group_var]]) %>%
         summarise(
           yi_agg = mean(yi, na.rm = TRUE),
-          vi_agg = mean(vi, na.rm = TRUE),  # Conservative approach
+          vi_agg = mean(vi, na.rm = TRUE),
           .groups = 'drop'
         )
       
@@ -3242,11 +3283,13 @@ server <- function(input, output, session) {
       
       egger <- regtest(temp_model)
       values$egger_pval <- egger$pval
+      values$bias_model <- temp_model  # Store for trim-and-fill
       
     } else {
       # Standard two-level model - use directly
       egger <- regtest(model_to_use)
       values$egger_pval <- egger$pval
+      values$bias_model <- model_to_use  # Store for trim-and-fill
     }
     
     cat("Egger's test for funnel plot asymmetry:\n")
@@ -3275,10 +3318,26 @@ server <- function(input, output, session) {
       return(FALSE)
     }
     
+    # CRITICAL FIX: Use the forest plot data
+    data_for_bias <- if(!is.null(values$forest_data)) {
+      values$forest_data
+    } else {
+      values$es_data
+    }
+    
+    is_between_group <- !is.null(values$forest_data_type) && 
+      values$forest_data_type == "diff"
+    
     if(inherits(model_to_use, "rma.mv")) {
-      # Use aggregated data
-      agg_data <- values$es_data %>%
-        group_by(StudyGroup) %>%
+      # Aggregate appropriately
+      group_var <- if(is_between_group) "StudyID" else "StudyGroup"
+      
+      if(!group_var %in% names(data_for_bias) && "StudyID" %in% names(data_for_bias)) {
+        group_var <- "StudyID"
+      }
+      
+      agg_data <- data_for_bias %>%
+        group_by(.data[[group_var]]) %>%
         summarise(
           yi_agg = mean(yi, na.rm = TRUE),
           vi_agg = mean(vi, na.rm = TRUE),
@@ -3312,15 +3371,31 @@ server <- function(input, output, session) {
       values$ma_model
     } else {
       return(div(class = "alert alert-warning",
-        icon("exclamation-triangle"),
-        " Please generate a forest plot first to enable publication bias tests."
+                 icon("exclamation-triangle"),
+                 " Please generate a forest plot first to enable publication bias tests."
       ))
     }
     
+    # CRITICAL FIX: Use the forest plot data
+    data_for_bias <- if(!is.null(values$forest_data)) {
+      values$forest_data
+    } else {
+      values$es_data
+    }
+    
+    is_between_group <- !is.null(values$forest_data_type) && 
+      values$forest_data_type == "diff"
+    
     # Prepare aggregated data if needed
     if(inherits(model_to_use, "rma.mv")) {
-      agg_data <- values$es_data %>%
-        group_by(StudyGroup) %>%
+      group_var <- if(is_between_group) "StudyID" else "StudyGroup"
+      
+      if(!group_var %in% names(data_for_bias) && "StudyID" %in% names(data_for_bias)) {
+        group_var <- "StudyID"
+      }
+      
+      agg_data <- data_for_bias %>%
+        group_by(.data[[group_var]]) %>%
         summarise(
           yi_agg = mean(yi, na.rm = TRUE),
           vi_agg = mean(vi, na.rm = TRUE),
@@ -3334,8 +3409,8 @@ server <- function(input, output, session) {
       
       if(is.null(temp_model)) {
         return(div(class = "alert alert-danger",
-          icon("exclamation-triangle"),
-          " Error: Could not fit aggregated model for trim-and-fill."
+                   icon("exclamation-triangle"),
+                   " Error: Could not fit aggregated model for trim-and-fill."
         ))
       }
       
@@ -3352,10 +3427,10 @@ server <- function(input, output, session) {
     if(egger$pval >= 0.05) {
       return(
         div(class = "alert alert-info",
-          icon("info-circle"),
-          " Egger's test is not significant (p >= 0.05).",
-          br(),
-          "Trim-and-fill analysis is typically only warranted when funnel plot asymmetry is detected."
+            icon("info-circle"),
+            " Egger's test is not significant (p >= 0.05).",
+            br(),
+            "Trim-and-fill analysis is typically only warranted when funnel plot asymmetry is detected."
         )
       )
     }
@@ -3381,57 +3456,62 @@ server <- function(input, output, session) {
       # Create output
       tagList(
         div(class = "well",
-          h4(icon("balance-scale"), " Trim-and-Fill Analysis Results"),
-          if(is_aggregated) {
-            p(em("Note: Analysis performed on aggregated effect sizes (one per study-group)"),
-              style = "color: #0066cc;")
-          },
-          hr(),
-          
-          h5("Number of Studies:"),
-          p(strong("Original:"), taf$k - k_filled),
-          p(strong("Imputed:"), k_filled),
-          p(strong("Total (after filling):"), taf$k),
-          
-          hr(),
-          h5("Effect Size Estimates:"),
-          p(strong("Original:"), sprintf("%.3f [%.3f, %.3f]", orig_est, orig_ci_lb, orig_ci_ub)),
-          p(strong("Adjusted:"), sprintf("%.3f [%.3f, %.3f]", adj_est, adj_ci_lb, adj_ci_ub)),
-          p(strong("Change:"), sprintf("%.3f (%.1f%%)", 
+            h4(icon("balance-scale"), " Trim-and-Fill Analysis Results"),
+            if(is_aggregated) {
+              if(is_between_group) {
+                p(em("Note: Analysis performed on aggregated between-group difference effect sizes (one per study)"),
+                  style = "color: #0066cc;")
+              } else {
+                p(em("Note: Analysis performed on aggregated effect sizes (one per study-group)"),
+                  style = "color: #0066cc;")
+              }
+            },
+            hr(),
+            
+            h5("Number of Studies:"),
+            p(strong("Original:"), taf$k - k_filled),
+            p(strong("Imputed:"), k_filled),
+            p(strong("Total (after filling):"), taf$k),
+            
+            hr(),
+            h5("Effect Size Estimates:"),
+            p(strong("Original:"), sprintf("%.3f [%.3f, %.3f]", orig_est, orig_ci_lb, orig_ci_ub)),
+            p(strong("Adjusted:"), sprintf("%.3f [%.3f, %.3f]", adj_est, adj_ci_lb, adj_ci_ub)),
+            p(strong("Change:"), sprintf("%.3f (%.1f%%)", 
                                          adj_est - orig_est,
                                          abs(adj_est - orig_est) / abs(orig_est) * 100)),
-          
-          hr(),
-          h5("Interpretation:"),
-          if(k_filled == 0) {
-            p(icon("check-circle"), " No studies were imputed. Funnel plot appears symmetric.",
-              style = "color: green;")
-          } else {
-            p(icon("exclamation-triangle"), 
-              sprintf(" %d studies were imputed, suggesting potential publication bias.", k_filled),
-              style = "color: orange;")
-          },
-          
-          if(abs(adj_est - orig_est) / abs(orig_est) > 0.1) {
-            p(icon("exclamation-circle"),
-              " The adjusted estimate differs by >10% from the original.",
-              br(),
-              "Consider the possibility of publication bias in your conclusions.",
-              style = "color: orange;")
-          } else {
-            p(icon("info-circle"),
-              " The adjusted estimate is similar to the original (<10% change).",
-              br(),
-              "Results appear robust to potential publication bias.",
-              style = "color: #0066cc;")
-          }
+            
+            hr(),
+            h5("Interpretation:"),
+            if(k_filled == 0) {
+              p(icon("check-circle"), " No studies were imputed. Funnel plot appears symmetric.",
+                style = "color: green;")
+            } else {
+              p(icon("exclamation-triangle"), 
+                sprintf(" %d studies were imputed, suggesting potential publication bias.", k_filled),
+                style = "color: orange;")
+            },
+            
+            if(abs(adj_est - orig_est) / abs(orig_est) > 0.1) {
+              p(icon("exclamation-circle"),
+                " The adjusted estimate differs by >10% from the original.",
+                br(),
+                "Consider the possibility of publication bias in your conclusions.",
+                style = "color: orange;")
+            } else {
+              p(icon("info-circle"),
+                " The adjusted estimate is similar to the original (<10% change).",
+                br(),
+                "Results appear robust to potential publication bias.",
+                style = "color: #0066cc;")
+            }
         )
       )
       
     }, error = function(e) {
       div(class = "alert alert-danger",
-        icon("exclamation-triangle"),
-        " Error running trim-and-fill: ", e$message
+          icon("exclamation-triangle"),
+          " Error running trim-and-fill: ", e$message
       )
     })
   })
@@ -3442,6 +3522,9 @@ server <- function(input, output, session) {
     req(values$trimfill_model)
     input$update_funnel
     
+    is_between_group <- !is.null(values$forest_data_type) && 
+      values$forest_data_type == "diff"
+    
     tryCatch({
       # The trimfill_model is already aggregated if we had rma.mv
       funnel(values$trimfill_model, level = c(90, 95, 99),
@@ -3449,9 +3532,15 @@ server <- function(input, output, session) {
              refline = 0,
              main = "Trim-and-Fill Adjusted Funnel Plot")
       
+      # Add appropriate note based on analysis type
       if(inherits(values$ma_model, "rma.mv")) {
-        mtext("Note: Based on aggregated effect sizes (one per study-group)", 
-              side = 1, line = 4, cex = 0.8, col = "blue")
+        if(is_between_group) {
+          mtext("Note: Based on aggregated between-group difference effect sizes (one per study)", 
+                side = 1, line = 4, cex = 0.8, col = "blue")
+        } else {
+          mtext("Note: Based on aggregated effect sizes (one per study-group)", 
+                side = 1, line = 4, cex = 0.8, col = "blue")
+        }
       }
     }, error = function(e) {
       plot.new()
@@ -3459,7 +3548,7 @@ server <- function(input, output, session) {
     })
   })
   
-
+  
   # =================== METHODS & RESULTS WRITEUP ==============================
   
   # Helper function to format p-values for writeup
@@ -3472,10 +3561,10 @@ server <- function(input, output, session) {
   # Helper function to get model description
   get_model_description <- function(method, test, citation_style = "apa") {
     model_text <- switch(method,
-      "REML" = "restricted maximum likelihood (REML)",
-      "DL" = "DerSimonian-Laird",
-      "FE" = "fixed-effect",
-      "random-effects"
+                         "REML" = "restricted maximum likelihood (REML)",
+                         "DL" = "DerSimonian-Laird",
+                         "FE" = "fixed-effect",
+                         "random-effects"
     )
     
     test_text <- if(test == "knha") {
@@ -3486,17 +3575,17 @@ server <- function(input, output, session) {
     
     ref <- if(citation_style == "apa") {
       switch(method,
-        "REML" = "(Viechtbauer, 2005)",
-        "DL" = "(DerSimonian & Laird, 1986)",
-        "FE" = "(Hedges & Olkin, 1985)",
-        ""
+             "REML" = "(Viechtbauer, 2005)",
+             "DL" = "(DerSimonian & Laird, 1986)",
+             "FE" = "(Hedges & Olkin, 1985)",
+             ""
       )
     } else {
       switch(method,
-        "REML" = "[1]",
-        "DL" = "[1]",
-        "FE" = "[1]",
-        ""
+             "REML" = "[1]",
+             "DL" = "[1]",
+             "FE" = "[1]",
+             ""
       )
     }
     
@@ -3541,13 +3630,13 @@ server <- function(input, output, session) {
           }
         })
         filter_text <- paste0(" Studies were filtered based on the following criteria: ",
-                             paste(filter_details, collapse = "; "),
-                             ". After applying these inclusion criteria, ", 
-                             n_filtered, " observations remained for analysis.")
+                              paste(filter_details, collapse = "; "),
+                              ". After applying these inclusion criteria, ", 
+                              n_filtered, " observations remained for analysis.")
       } else if(length(values$active_filter_vars) > 0 && !is.null(values$filtered_data)) {
         filter_text <- paste0(" After applying inclusion criteria based on ",
-                             paste(values$active_filter_vars, collapse = ", "),
-                             ", ", n_filtered, " observations remained for analysis.")
+                              paste(values$active_filter_vars, collapse = ", "),
+                              ", ", n_filtered, " observations remained for analysis.")
       }
       
       methods_parts <- c(methods_parts, paste0(
@@ -3559,9 +3648,9 @@ server <- function(input, output, session) {
       methods_parts <- c(methods_parts, paste0(heading3, "Effect Size Calculation\n"))
       
       es_type_text <- switch(input$es_type,
-        "SMCR" = "standardized mean change using raw score standardization (SMCR)",
-        "SMD" = "standardized mean difference (SMD; Cohen's d)",
-        "MD" = "raw mean difference (MD)"
+                             "SMCR" = "standardized mean change using raw score standardization (SMCR)",
+                             "SMD" = "standardized mean difference (SMD; Cohen's d)",
+                             "MD" = "raw mean difference (MD)"
       )
       
       hedges_text <- if(isTRUE(input$apply_hedges)) {
@@ -3571,11 +3660,11 @@ server <- function(input, output, session) {
       } else ""
       
       corr_text <- switch(input$corr_source,
-        "fixed" = paste0(" A pre-post correlation of ", italic_start, "r", italic_end, 
-                        " = ", input$corr_value, " was assumed for variance estimation."),
-        "column" = " Pre-post correlations were obtained from the data for variance estimation.",
-        "compute" = " Pre-post correlations were computed from the change score standard deviations.",
-        ""
+                          "fixed" = paste0(" A pre-post correlation of ", italic_start, "r", italic_end, 
+                                           " = ", input$corr_value, " was assumed for variance estimation."),
+                          "column" = " Pre-post correlations were obtained from the data for variance estimation.",
+                          "compute" = " Pre-post correlations were computed from the change score standard deviations.",
+                          ""
       )
       
       methods_parts <- c(methods_parts, paste0(
@@ -3585,11 +3674,11 @@ server <- function(input, output, session) {
       
       if(isTRUE(input$apply_hedges)) {
         references <- c(references, 
-          if(input$citation_style == "apa") {
-            "Hedges, L. V. (1981). Distribution theory for Glass's estimator of effect size and related estimators. Journal of Educational Statistics, 6(2), 107-128."
-          } else {
-            "Hedges LV. Distribution theory for Glass's estimator of effect size and related estimators. J Educ Stat. 1981;6(2):107-128."
-          }
+                        if(input$citation_style == "apa") {
+                          "Hedges, L. V. (1981). Distribution theory for Glass's estimator of effect size and related estimators. Journal of Educational Statistics, 6(2), 107-128."
+                        } else {
+                          "Hedges LV. Distribution theory for Glass's estimator of effect size and related estimators. J Educ Stat. 1981;6(2):107-128."
+                        }
         )
       }
       
@@ -3617,15 +3706,15 @@ server <- function(input, output, session) {
         ))
         
         references <- c(references,
-          if(input$citation_style == "apa") {
-            c("Cheung, M. W. L. (2014). Modeling dependent effect sizes with three-level meta-analyses: A structural equation modeling approach. Psychological Methods, 19(2), 211-229.",
-              "Viechtbauer, W. (2005). Bias and efficiency of meta-analytic variance estimators in the random-effects model. Journal of Educational and Behavioral Statistics, 30(3), 261-293.",
-              "Higgins, J. P., & Thompson, S. G. (2002). Quantifying heterogeneity in a meta-analysis. Statistics in Medicine, 21(11), 1539-1558.")
-          } else {
-            c("Cheung MWL. Modeling dependent effect sizes with three-level meta-analyses: A structural equation modeling approach. Psychol Methods. 2014;19(2):211-229.",
-              "Viechtbauer W. Bias and efficiency of meta-analytic variance estimators in the random-effects model. J Educ Behav Stat. 2005;30(3):261-293.",
-              "Higgins JP, Thompson SG. Quantifying heterogeneity in a meta-analysis. Stat Med. 2002;21(11):1539-1558.")
-          }
+                        if(input$citation_style == "apa") {
+                          c("Cheung, M. W. L. (2014). Modeling dependent effect sizes with three-level meta-analyses: A structural equation modeling approach. Psychological Methods, 19(2), 211-229.",
+                            "Viechtbauer, W. (2005). Bias and efficiency of meta-analytic variance estimators in the random-effects model. Journal of Educational and Behavioral Statistics, 30(3), 261-293.",
+                            "Higgins, J. P., & Thompson, S. G. (2002). Quantifying heterogeneity in a meta-analysis. Statistics in Medicine, 21(11), 1539-1558.")
+                        } else {
+                          c("Cheung MWL. Modeling dependent effect sizes with three-level meta-analyses: A structural equation modeling approach. Psychol Methods. 2014;19(2):211-229.",
+                            "Viechtbauer W. Bias and efficiency of meta-analytic variance estimators in the random-effects model. J Educ Behav Stat. 2005;30(3):261-293.",
+                            "Higgins JP, Thompson SG. Quantifying heterogeneity in a meta-analysis. Stat Med. 2002;21(11):1539-1558.")
+                        }
         )
       } else {
         # Standard two-level model description
@@ -3638,13 +3727,13 @@ server <- function(input, output, session) {
         ))
         
         references <- c(references,
-          if(input$citation_style == "apa") {
-            c("Viechtbauer, W. (2005). Bias and efficiency of meta-analytic variance estimators in the random-effects model. Journal of Educational and Behavioral Statistics, 30(3), 261-293.",
-              "Higgins, J. P., & Thompson, S. G. (2002). Quantifying heterogeneity in a meta-analysis. Statistics in Medicine, 21(11), 1539-1558.")
-          } else {
-            c("Viechtbauer W. Bias and efficiency of meta-analytic variance estimators in the random-effects model. J Educ Behav Stat. 2005;30(3):261-293.",
-              "Higgins JP, Thompson SG. Quantifying heterogeneity in a meta-analysis. Stat Med. 2002;21(11):1539-1558.")
-          }
+                        if(input$citation_style == "apa") {
+                          c("Viechtbauer, W. (2005). Bias and efficiency of meta-analytic variance estimators in the random-effects model. Journal of Educational and Behavioral Statistics, 30(3), 261-293.",
+                            "Higgins, J. P., & Thompson, S. G. (2002). Quantifying heterogeneity in a meta-analysis. Statistics in Medicine, 21(11), 1539-1558.")
+                        } else {
+                          c("Viechtbauer W. Bias and efficiency of meta-analytic variance estimators in the random-effects model. J Educ Behav Stat. 2005;30(3):261-293.",
+                            "Higgins JP, Thompson SG. Quantifying heterogeneity in a meta-analysis. Stat Med. 2002;21(11):1539-1558.")
+                        }
         )
       }
       
@@ -3676,38 +3765,38 @@ server <- function(input, output, session) {
         }
         
         if(!is.null(egger)) {
-        
-        methods_parts <- c(methods_parts, paste0(heading3, "Publication Bias Assessment\n"))
-        
-        pub_bias_text <- paste0(
-          "Publication bias was assessed through visual inspection of funnel plots and formally tested using Egger's regression test for funnel plot asymmetry",
-          if(input$citation_style == "apa") " (Egger et al., 1997)" else " [4]", "."
-        )
-        
-        if(isTRUE(input$run_trimfill) && egger$pval < 0.05 && !is.null(values$trimfill_model)) {
-          pub_bias_text <- paste0(pub_bias_text,
-            " When significant asymmetry was detected, Duval and Tweedie's trim-and-fill procedure was applied to estimate the number of missing studies and provide bias-adjusted effect estimates",
-            if(input$citation_style == "apa") " (Duval & Tweedie, 2000)" else " [5]", "."
+          
+          methods_parts <- c(methods_parts, paste0(heading3, "Publication Bias Assessment\n"))
+          
+          pub_bias_text <- paste0(
+            "Publication bias was assessed through visual inspection of funnel plots and formally tested using Egger's regression test for funnel plot asymmetry",
+            if(input$citation_style == "apa") " (Egger et al., 1997)" else " [4]", "."
           )
           
-          references <- c(references,
-            if(input$citation_style == "apa") {
-              "Duval, S., & Tweedie, R. (2000). Trim and fill: A simple funnel-plot-based method of testing and adjusting for publication bias in meta-analysis. Biometrics, 56(2), 455-463."
-            } else {
-              "Duval S, Tweedie R. Trim and fill: A simple funnel-plot-based method of testing and adjusting for publication bias in meta-analysis. Biometrics. 2000;56(2):455-463."
-            }
-          )
-        }
-        
+          if(isTRUE(input$run_trimfill) && egger$pval < 0.05 && !is.null(values$trimfill_model)) {
+            pub_bias_text <- paste0(pub_bias_text,
+                                    " When significant asymmetry was detected, Duval and Tweedie's trim-and-fill procedure was applied to estimate the number of missing studies and provide bias-adjusted effect estimates",
+                                    if(input$citation_style == "apa") " (Duval & Tweedie, 2000)" else " [5]", "."
+            )
+            
+            references <- c(references,
+                            if(input$citation_style == "apa") {
+                              "Duval, S., & Tweedie, R. (2000). Trim and fill: A simple funnel-plot-based method of testing and adjusting for publication bias in meta-analysis. Biometrics, 56(2), 455-463."
+                            } else {
+                              "Duval S, Tweedie R. Trim and fill: A simple funnel-plot-based method of testing and adjusting for publication bias in meta-analysis. Biometrics. 2000;56(2):455-463."
+                            }
+            )
+          }
+          
         }
         methods_parts <- c(methods_parts, paste0(pub_bias_text, "\n\n"))
         
         references <- c(references,
-          if(input$citation_style == "apa") {
-            "Egger, M., Davey Smith, G., Schneider, M., & Minder, C. (1997). Bias in meta-analysis detected by a simple, graphical test. BMJ, 315(7109), 629-634."
-          } else {
-            "Egger M, Davey Smith G, Schneider M, Minder C. Bias in meta-analysis detected by a simple, graphical test. BMJ. 1997;315(7109):629-634."
-          }
+                        if(input$citation_style == "apa") {
+                          "Egger, M., Davey Smith, G., Schneider, M., & Minder, C. (1997). Bias in meta-analysis detected by a simple, graphical test. BMJ, 315(7109), 629-634."
+                        } else {
+                          "Egger M, Davey Smith G, Schneider M, Minder C. Bias in meta-analysis detected by a simple, graphical test. BMJ. 1997;315(7109):629-634."
+                        }
         )
       }
       
@@ -3718,11 +3807,11 @@ server <- function(input, output, session) {
       ))
       
       references <- c(references,
-        if(input$citation_style == "apa") {
-          "Viechtbauer, W. (2010). Conducting meta-analyses in R with the metafor package. Journal of Statistical Software, 36(3), 1-48."
-        } else {
-          "Viechtbauer W. Conducting meta-analyses in R with the metafor package. J Stat Softw. 2010;36(3):1-48."
-        }
+                      if(input$citation_style == "apa") {
+                        "Viechtbauer, W. (2010). Conducting meta-analyses in R with the metafor package. Journal of Statistical Software, 36(3), 1-48."
+                      } else {
+                        "Viechtbauer W. Conducting meta-analyses in R with the metafor package. J Stat Softw. 2010;36(3):1-48."
+                      }
       )
       
       sections$methods <- paste(methods_parts, collapse = "")
@@ -3752,14 +3841,14 @@ server <- function(input, output, session) {
         if(inherits(model, "rma.mv")) {
           # For rma.mv, use QM test statistic
           test_stat <- paste0(italic_start, "t", italic_end, " = ", 
-                             sprintf("%.2f", sqrt(model$QM)))
+                              sprintf("%.2f", sqrt(model$QM)))
         } else {
           test_stat <- paste0(italic_start, "t", italic_end, "(", model$dfs, ") = ", 
-                             sprintf("%.2f", model$zval))
+                              sprintf("%.2f", model$zval))
         }
       } else {
         test_stat <- paste0(italic_start, "z", italic_end, " = ", 
-                           sprintf("%.2f", model$zval))
+                            sprintf("%.2f", model$zval))
       }
       
       
@@ -3801,7 +3890,7 @@ server <- function(input, output, session) {
       }
       
       I2_interp <- if(I2 < 25) "low" else if(I2 < 50) "low to moderate" else 
-                   if(I2 < 75) "moderate to substantial" else "substantial"
+        if(I2 < 75) "moderate to substantial" else "substantial"
       
       results_parts <- c(results_parts, paste0(
         "Heterogeneity analysis revealed ", I2_interp, " heterogeneity among effect sizes, ",
@@ -3843,62 +3932,62 @@ server <- function(input, output, session) {
         if(is.null(egger)) {
           results_parts <- c(results_parts, "Publication bias assessment was not available.\n\n")
         } else {
-        
-        egger_result <- paste0(
-          "Egger's regression test ",
-          if(egger$pval < 0.05) "indicated significant" else "did not indicate significant",
-          " funnel plot asymmetry, ", italic_start, "z", italic_end, " = ", 
-          sprintf("%.2f", egger$zval), ", ", italic_start, "p", italic_end, " ", 
-          format_p_writeup(egger$pval), "."
-        )
-        
-        # Add trim-and-fill results if applicable
-        if(isTRUE(input$run_trimfill) && egger$pval < 0.05 && !is.null(values$trimfill_model)) {
-          taf <- values$trimfill_model
-          k0 <- taf$k0
-          adj_est <- coef(taf)
-          adj_ci_lb <- taf$ci.lb
-          adj_ci_ub <- taf$ci.ub
           
-          side_text <- if(input$trimfill_side == "left") "left (smaller effects)" else 
-                       "right (larger effects)"
-          
-          egger_result <- paste0(egger_result, 
-            " The trim-and-fill procedure identified ", bold_start, k0, bold_end, 
-            " potentially missing studies on the ", side_text, " side of the funnel plot. ",
-            "After imputing these studies, the adjusted effect estimate was ",
-            italic_start, es_label, italic_end, " = ", sprintf("%.2f", adj_est),
-            " (95% CI [", sprintf("%.2f", adj_ci_lb), ", ", sprintf("%.2f", adj_ci_ub), "]), ",
-            "compared to the original estimate of ", italic_start, es_label, italic_end, 
-            " = ", sprintf("%.2f", est), "."
+          egger_result <- paste0(
+            "Egger's regression test ",
+            if(egger$pval < 0.05) "indicated significant" else "did not indicate significant",
+            " funnel plot asymmetry, ", italic_start, "z", italic_end, " = ", 
+            sprintf("%.2f", egger$zval), ", ", italic_start, "p", italic_end, " ", 
+            format_p_writeup(egger$pval), "."
           )
           
-          # Add interpretation
-          change_pct <- abs((adj_est - est) / est * 100)
-          if(change_pct > 20) {
-            egger_result <- paste0(egger_result,
-              " This represents a ", sprintf("%.0f", change_pct), 
-              "% reduction in the effect size magnitude, suggesting that publication bias may have inflated the original estimate."
+          # Add trim-and-fill results if applicable
+          if(isTRUE(input$run_trimfill) && egger$pval < 0.05 && !is.null(values$trimfill_model)) {
+            taf <- values$trimfill_model
+            k0 <- taf$k0
+            adj_est <- coef(taf)
+            adj_ci_lb <- taf$ci.lb
+            adj_ci_ub <- taf$ci.ub
+            
+            side_text <- if(input$trimfill_side == "left") "left (smaller effects)" else 
+              "right (larger effects)"
+            
+            egger_result <- paste0(egger_result, 
+                                   " The trim-and-fill procedure identified ", bold_start, k0, bold_end, 
+                                   " potentially missing studies on the ", side_text, " side of the funnel plot. ",
+                                   "After imputing these studies, the adjusted effect estimate was ",
+                                   italic_start, es_label, italic_end, " = ", sprintf("%.2f", adj_est),
+                                   " (95% CI [", sprintf("%.2f", adj_ci_lb), ", ", sprintf("%.2f", adj_ci_ub), "]), ",
+                                   "compared to the original estimate of ", italic_start, es_label, italic_end, 
+                                   " = ", sprintf("%.2f", est), "."
             )
-          } else if(change_pct > 10) {
+            
+            # Add interpretation
+            change_pct <- abs((adj_est - est) / est * 100)
+            if(change_pct > 20) {
+              egger_result <- paste0(egger_result,
+                                     " This represents a ", sprintf("%.0f", change_pct), 
+                                     "% reduction in the effect size magnitude, suggesting that publication bias may have inflated the original estimate."
+              )
+            } else if(change_pct > 10) {
+              egger_result <- paste0(egger_result,
+                                     " This represents a modest ", sprintf("%.0f", change_pct),
+                                     "% change in the effect size."
+              )
+            } else {
+              egger_result <- paste0(egger_result,
+                                     " The adjusted estimate remained similar to the original, suggesting the findings are relatively robust to potential publication bias."
+              )
+            }
+          } else if(egger$pval >= 0.05) {
             egger_result <- paste0(egger_result,
-              " This represents a modest ", sprintf("%.0f", change_pct),
-              "% change in the effect size."
-            )
-          } else {
-            egger_result <- paste0(egger_result,
-              " The adjusted estimate remained similar to the original, suggesting the findings are relatively robust to potential publication bias."
+                                   " Visual inspection of the funnel plot supported this finding, suggesting low risk of publication bias."
             )
           }
-        } else if(egger$pval >= 0.05) {
-          egger_result <- paste0(egger_result,
-            " Visual inspection of the funnel plot supported this finding, suggesting low risk of publication bias."
-          )
+          
+          results_parts <- c(results_parts, paste0(egger_result, "\n\n"))
         }
-        
-        results_parts <- c(results_parts, paste0(egger_result, "\n\n"))
       }
-        }
       
       sections$results <- paste(results_parts, collapse = "")
     }
@@ -3939,12 +4028,12 @@ server <- function(input, output, session) {
     if(input$writeup_format == "md") {
       # Render markdown
       HTML(paste0("<div style='white-space: pre-wrap; font-family: Georgia, serif;'>", 
-                 gsub("\\*\\*(.+?)\\*\\*", "<b>\\1</b>",
-                      gsub("\\*(.+?)\\*", "<i>\\1</i>",
-                           gsub("## ", "<h3>", 
-                                gsub("### ", "<h4>",
-                                     gsub("\n", "<br>", values$writeup_text))))),
-                 "</div>"))
+                  gsub("\\*\\*(.+?)\\*\\*", "<b>\\1</b>",
+                       gsub("\\*(.+?)\\*", "<i>\\1</i>",
+                            gsub("## ", "<h3>", 
+                                 gsub("### ", "<h4>",
+                                      gsub("\n", "<br>", values$writeup_text))))),
+                  "</div>"))
     } else {
       # Plain text
       pre(style = "white-space: pre-wrap; font-family: monospace;", values$writeup_text)
@@ -3955,9 +4044,9 @@ server <- function(input, output, session) {
   output$download_writeup <- downloadHandler(
     filename = function() {
       ext <- switch(input$writeup_format,
-        "txt" = "txt",
-        "md" = "md", 
-        "docx" = "docx"
+                    "txt" = "txt",
+                    "md" = "md", 
+                    "docx" = "docx"
       )
       paste0("meta_analysis_writeup_", Sys.Date(), ".", ext)
     },
@@ -3977,11 +4066,11 @@ server <- function(input, output, session) {
             if(grepl("^## ", line)) {
               # Heading 2
               doc <- officer::body_add_par(doc, gsub("^## ", "", line), 
-                                          style = "heading 2")
+                                           style = "heading 2")
             } else if(grepl("^### ", line)) {
               # Heading 3
               doc <- officer::body_add_par(doc, gsub("^### ", "", line), 
-                                          style = "heading 3")
+                                           style = "heading 3")
             } else if(nchar(trimws(line)) > 0) {
               # Regular paragraph - handle bold and italic
               clean_line <- line
@@ -3996,7 +4085,7 @@ server <- function(input, output, session) {
           # Fallback to plain text
           writeLines(gsub("\\*", "", values$writeup_text), file)
           showNotification("Note: 'officer' package not available. Saved as plain text.", 
-                          type = "warning")
+                           type = "warning")
         }
       } else {
         # Plain text or markdown
@@ -4010,13 +4099,13 @@ server <- function(input, output, session) {
     },
     contentType = function() {
       switch(input$writeup_format,
-        "txt" = "text/plain",
-        "md" = "text/markdown",
-        "docx" = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+             "txt" = "text/plain",
+             "md" = "text/markdown",
+             "docx" = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       )
     }
   )
-
+  
   # =================== DOWNLOADS =============================================
   
   output$download_filtered <- downloadHandler(
@@ -4043,30 +4132,30 @@ server <- function(input, output, session) {
         # Add Egger's test results if run
         if(isTRUE(input$run_egger)) {
           cat("\n\n=== EGGER'S TEST FOR FUNNEL PLOT ASYMMETRY ===\n\n")
-        # Handle both rma and rma.mv models for Egger's test
-        if(inherits(values$ma_model, "rma.mv")) {
-          agg_data <- values$es_data %>%
-            group_by(StudyGroup) %>%
-            summarise(
-              yi_agg = mean(yi, na.rm = TRUE),
-              vi_agg = mean(vi, na.rm = TRUE),
-              .groups = 'drop'
+          # Handle both rma and rma.mv models for Egger's test
+          if(inherits(values$ma_model, "rma.mv")) {
+            agg_data <- values$es_data %>%
+              group_by(StudyGroup) %>%
+              summarise(
+                yi_agg = mean(yi, na.rm = TRUE),
+                vi_agg = mean(vi, na.rm = TRUE),
+                .groups = 'drop'
+              )
+            
+            temp_model <- tryCatch(
+              rma(yi = yi_agg, vi = vi_agg, data = agg_data, method = "REML"),
+              error = function(e) NULL
             )
-          
-          temp_model <- tryCatch(
-            rma(yi = yi_agg, vi = vi_agg, data = agg_data, method = "REML"),
-            error = function(e) NULL
-          )
-          
-          if(!is.null(temp_model)) {
-            egger <- regtest(temp_model)
+            
+            if(!is.null(temp_model)) {
+              egger <- regtest(temp_model)
+            } else {
+              egger <- NULL
+            }
           } else {
-            egger <- NULL
+            egger <- regtest(values$ma_model)
           }
-        } else {
-          egger <- regtest(values$ma_model)
-        }
-        
+          
           cat("z =", round(egger$zval, 3), "\n")
           cat("p =", format.pval(egger$pval, 3), "\n")
           
@@ -4199,14 +4288,14 @@ server <- function(input, output, session) {
       if(!is.null(values$ma_model)) {
         if(input$contour_enhanced) {
           funnel(values$ma_model, level = c(90, 95, 99), 
-                shade = c("white", "gray75", "gray60"), legend = TRUE)
+                 shade = c("white", "gray75", "gray60"), legend = TRUE)
         } else {
           funnel(values$ma_model)
         }
         
         if(input$label_funnel == TRUE && nrow(values$es_data) <= input$max_funnel_labels) {
           text(values$es_data$yi, sqrt(values$es_data$vi),
-              values$es_data$StudyID, cex = input$label_size, pos = 3)
+               values$es_data$StudyID, cex = input$label_size, pos = 3)
         }
       }
       
@@ -4259,3 +4348,5 @@ server <- function(input, output, session) {
 
 # Run app
 shinyApp(ui = ui, server = server)
+
+
