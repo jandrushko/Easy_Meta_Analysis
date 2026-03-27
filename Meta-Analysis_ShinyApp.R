@@ -618,7 +618,13 @@ ui <- dashboardPage(
                          sliderInput("forest_width", "Plot width (inches):",
                                      min = 6, max = 20, value = 20, step = 1),
                          sliderInput("forest_height", "Plot height (inches):",
-                                     min = 6, max = 30, value = 12, step = 1)
+                                     min = 6, max = 30, value = 12, step = 1),
+                         sliderInput("subgroup_bottom_pad",
+                                     "Bottom padding below subgroups:",
+                                     min = 0.5, max = 6, value = 2.5, step = 0.25,
+                                     post = "× row"),
+                         helpText(style = "font-size: 10px;",
+                                  "Increase if the x-axis bracket overlaps the lowest subgroup diamond.")
                      )
               ),
               column(3,
@@ -630,6 +636,9 @@ ui <- dashboardPage(
           )
         ),
         
+        # =================== SUBGROUP COLOUR EDITOR (shown when grouping active) =====
+        uiOutput("subgroup_colour_panel_ui"),
+        
         fluidRow(
           box(
             title = "Enhanced Forest Plot",
@@ -637,6 +646,9 @@ ui <- dashboardPage(
             width = 12,
             
             plotOutput("enhanced_forest", height = "auto"),
+            
+            # Figure caption (subtitle moved out of the plot for better centering)
+            uiOutput("forest_caption_ui"),
             
             conditionalPanel(
               condition = "input.show_summary_stats",
@@ -698,6 +710,27 @@ ui <- dashboardPage(
             width = 4,
             
             checkboxInput("contour_enhanced", "Enhanced contours", value = TRUE),
+            
+            conditionalPanel(
+              condition = "input.contour_enhanced",
+              div(style = "background: #f0f4ff; border: 1px solid #aac; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
+                  h5(icon("palette"), " Contour Zone Colours", style = "margin-top: 0; color: #2c3e7a;"),
+                  p(style = "font-size: 11px; color: #555; margin-bottom: 8px;",
+                    "Colours applied to the three significance zones (outermost to innermost)."),
+                  fluidRow(
+                    column(4,
+                           colourInput("contour_col1", HTML("0.10 &lt; p &le; 1.00:"), value = "#FFFFFF")
+                    ),
+                    column(4,
+                           colourInput("contour_col2", HTML("0.05 &lt; p &le; 0.10:"), value = "#E69F00")
+                    ),
+                    column(4,
+                           colourInput("contour_col3", HTML("0.01 &lt; p &le; 0.05:"), value = "#0072B2")
+                    )
+                  )
+              )
+            ),
+            
             checkboxInput("label_funnel", "Label studies", value = TRUE),
             
             conditionalPanel(
@@ -706,6 +739,24 @@ ui <- dashboardPage(
                           min = 0.3, max = 1.2, value = 0.7, step = 0.1),
               numericInput("max_funnel_labels", "Max labels:",
                            value = 50, min = 5, max = 200)
+            ),
+            
+            hr(),
+            
+            # ---- LEGEND LABEL CONTROL ----------------------------------------
+            div(style = "background: #e8f5e9; border: 1px solid #4caf50; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
+                h5(icon("tag"), " Funnel Plot Legend Label", style = "margin-top: 0; color: #2e7d32;"),
+                p(style = "font-size: 11px; color: #555; margin-bottom: 8px;",
+                  "Controls the label shown for data points in the legend. Auto-detection determines 
+                   whether each point represents a study or an individual effect size/outcome measure."),
+                uiOutput("funnel_legend_label_preview"),
+                textInput("funnel_legend_label",
+                          label = "Override label (leave blank to auto-detect):",
+                          value = "",
+                          placeholder = "e.g. Outcomes, Measures, Effect sizes..."),
+                helpText(style = "font-size: 10px;",
+                         "Useful when reviewers note that 'Studies' is not accurate 
+                          (e.g. when each point is an individual outcome measure from the same study).")
             ),
             
             hr(),
@@ -856,8 +907,186 @@ server <- function(input, output, session) {
     egger_pval = NULL,
     writeup_text = NULL,
     filter_history = list(),
-    model_type = NULL              # NEW: Track model type
+    model_type = NULL,              # NEW: Track model type
+    sg_color_reset_trigger = NULL   # bumped when user clicks "Reset colours"
   )
+  
+  # =================== SUBGROUP COLOUR PICKERS ================================
+  # Wong 2011 colorblind-friendly default palette
+  WONG_PALETTE <- c(
+    "#E69F00", "#56B4E9", "#009E73", "#F0E442",
+    "#0072B2", "#D55E00", "#CC79A7", "#999999"
+  )
+  
+  # =================== SUBGROUP COLOUR PANEL ==================================
+  # Wrapper: renders the entire colour-editor box only when a grouping var is chosen
+  # Helper: find levels for the grouping variable from whichever data frame has it.
+  # Checks forest_data first (holds computed columns like TreatmentSubgroup),
+  # then falls back to es_data for variables present in the raw effect-size table.
+  get_group_levels <- function(grp_var) {
+    if (is.null(grp_var) || !nzchar(grp_var)) return(character(0))
+    for (src in list(values$forest_data, values$es_data)) {
+      if (!is.null(src) && grp_var %in% names(src)) {
+        lvls <- sort(unique(na.omit(as.character(src[[grp_var]]))))
+        if (length(lvls) > 0) return(lvls)
+      }
+    }
+    character(0)
+  }
+  
+  output$subgroup_colour_panel_ui <- renderUI({
+    grp_var <- input$forest_group_var
+    if (is.null(grp_var) || !nzchar(grp_var)) return(NULL)
+    
+    levels_vec <- get_group_levels(grp_var)
+    
+    # If no levels yet (forest not rendered), show a prompt rather than nothing
+    if (length(levels_vec) == 0) {
+      return(
+        fluidRow(
+          box(
+            title = HTML("<i class='fa fa-palette'></i>  Subgroup Colours"),
+            status = "info", solidHeader = TRUE, collapsible = TRUE, width = 12,
+            div(
+              style = "background:#fff8e1; border:1px solid #ffe082; border-radius:5px; padding:12px;",
+              icon("arrow-up"), " ",
+              strong("Click 'Update Plot' once"),
+              " to load the subgroup levels, then return here to customise their colours."
+            )
+          )
+        )
+      )
+    }
+    
+    fluidRow(
+      box(
+        title = HTML(paste0(
+          "<i class='fa fa-palette'></i>  Subgroup Colours — ",
+          "<span style='font-weight:normal;'>",
+          grp_var,
+          "</span>",
+          "<span style='font-size:11px; font-weight:normal; margin-left:12px; color:#555;'>",
+          " Pick a colour swatch to change it. Colours persist until you reload data.",
+          "</span>"
+        )),
+        status  = "info",
+        solidHeader = TRUE,
+        collapsible = TRUE,
+        width   = 12,
+        
+        fluidRow(
+          column(10,
+                 div(
+                   style = "background:#f0f8ff; border:1px solid #b0d4f0;
+                       border-radius:6px; padding:12px 16px 4px 16px;",
+                   p(style = "margin:0 0 10px 0; font-size:13px; color:#1a4f7a;",
+                     icon("info-circle"), " ",
+                     strong("How to use:"),
+                     " Click any colour swatch below to open the colour picker.  ",
+                     "Choose a new colour, close the picker, then click ",
+                     strong("Update Plot"), " to apply.  ",
+                     "To keep the same colours across multiple analyses (e.g., Eccentric always orange), ",
+                     "set all subgroups here before switching filters."
+                   ),
+                   uiOutput("subgroup_color_pickers")
+                 )
+          ),
+          column(2,
+                 div(style = "padding-top:10px;",
+                     actionButton(
+                       "reset_sg_colors",
+                       HTML("<i class='fa fa-undo'></i> Reset to<br>defaults"),
+                       class = "btn-default btn-block",
+                       style = "white-space:normal; font-size:12px;"
+                     ),
+                     br(),
+                     helpText(
+                       style = "font-size:11px; color:#666;",
+                       "Restores the colorblind-friendly Wong palette."
+                     )
+                 )
+          )
+        )
+      )
+    )
+  })
+  
+  output$subgroup_color_pickers <- renderUI({
+    grp_var <- input$forest_group_var
+    if (is.null(grp_var) || !nzchar(grp_var)) return(NULL)
+    
+    levels_vec <- get_group_levels(grp_var)
+    if (length(levels_vec) == 0) return(NULL)
+    
+    # Lay out pickers in rows of 4 to avoid a single long column
+    n_cols  <- 4L
+    n_rows  <- ceiling(length(levels_vec) / n_cols)
+    
+    row_list <- lapply(seq_len(n_rows), function(r) {
+      idx_start <- (r - 1L) * n_cols + 1L
+      idx_end   <- min(r * n_cols, length(levels_vec))
+      row_lvls  <- levels_vec[seq(idx_start, idx_end)]
+      
+      fluidRow(
+        lapply(row_lvls, function(lvl) {
+          i       <- match(lvl, levels_vec)
+          # Decide which colour to use: existing input > reset trigger > WONG default
+          def_col <- if (!is.null(values$sg_color_reset_trigger)) {
+            # reset was just clicked — use palette default
+            if (i <= length(WONG_PALETTE)) WONG_PALETTE[i] else "#888888"
+          } else {
+            # use whatever is currently stored for this level
+            cur <- tryCatch(
+              isolate(input[[paste0("sg_col_", make.names(lvl))]]),
+              error = function(e) NULL
+            )
+            if (!is.null(cur) && nzchar(cur)) cur else {
+              if (i <= length(WONG_PALETTE)) WONG_PALETTE[i] else "#888888"
+            }
+          }
+          
+          column(
+            width = max(1L, floor(12L / n_cols)),
+            colourInput(
+              inputId = paste0("sg_col_", make.names(lvl)),
+              label   = tags$span(
+                style = "font-size:13px; font-weight:bold;",
+                lvl
+              ),
+              value   = def_col,
+              showColour = "both",   # show both the hex box and the swatch
+              returnName = FALSE
+            )
+          )
+        })
+      )
+    })
+    
+    do.call(tagList, row_list)
+  })
+  
+  # Reset colours: bump a reactive value so renderUI re-runs with palette defaults
+  observeEvent(input$reset_sg_colors, {
+    values$sg_color_reset_trigger <- Sys.time()
+    showNotification(
+      "Subgroup colours reset to the Wong colorblind-friendly defaults.",
+      type = "message", duration = 3
+    )
+  })
+  
+  # Helper: get current colour map (named vector) for the active grouping variable
+  get_group_colors <- function(group_levels) {
+    vapply(group_levels, function(lvl) {
+      id  <- paste0("sg_col_", make.names(lvl))
+      col <- tryCatch(input[[id]], error = function(e) NULL)
+      if (is.null(col) || !nzchar(col)) {
+        idx <- match(lvl, group_levels)
+        if (!is.na(idx) && idx <= length(WONG_PALETTE)) WONG_PALETTE[idx] else "#888888"
+      } else {
+        col
+      }
+    }, character(1L))
+  }
   
   # =================== DATA LOADING ==========================================
   
@@ -2355,9 +2584,24 @@ server <- function(input, output, session) {
     # ---- Overall diamond vertical position & y-limits -----------------------
     diamond_center_y <- -input$row_spacing * 0.35
     diamond_height   <- input$row_spacing * 0.4
+    y_max            <- max(plot_data$row) + input$row_spacing * 1.5
     
-    y_max <- max(plot_data$row) + input$row_spacing * 2.0  # Increased to fit header
-    y_min <- diamond_center_y - diamond_height - input$row_spacing * 0.8  # Extra space for bracket and Effect Size label
+    # --- compute subgroup positions BEFORE y_min ---
+    sg_levels <- sg_y_positions <- NULL
+    if (!is.null(forest_pkg$sg_data) && length(forest_pkg$sg_data) > 0 &&
+        isTRUE(input$show_subgroup_diamonds)) {
+      sg_levels    <- names(forest_pkg$sg_data)
+      sg_first_y   <- diamond_center_y - diamond_height * 1.7 - input$row_spacing * 0.15
+      sg_y_positions <- sg_first_y - (seq_along(sg_levels) - 1L) * input$row_spacing * 0.85
+    }
+    
+    # y_min: lowest content bottom + user-controlled gap
+    y_min <- if (!is.null(sg_y_positions)) {
+      (min(sg_y_positions) - diamond_height * 0.85) -
+        input$subgroup_bottom_pad * input$row_spacing
+    } else {
+      diamond_center_y - diamond_height - input$row_spacing * 0.5
+    }
     
     # ---- BASE GG PLOT -------------------------------------------------------
     if (grouping_enabled) {
@@ -2486,9 +2730,6 @@ server <- function(input, output, session) {
           center_y <- start_y - (i - 1) * gap
           height_g <- input$row_spacing * 0.35
           
-          # keep everything inside the plotting window
-          y_min <- min(y_min, center_y - height_g - input$row_spacing * 0.2)
-          
           diamond_df_g <- data.frame(
             x = c(
               gm$ci.lb,
@@ -2506,6 +2747,16 @@ server <- function(input, output, session) {
             ),
             group = factor(g, levels = levels(plot_data$group))
           )
+          
+          # Use the user-controlled bottom pad for the LAST diamond so the
+          # x-axis bracket never overlaps the subgroup summary diamonds.
+          bottom_pad_mult <- if (!is.null(input$subgroup_bottom_pad)) {
+            input$subgroup_bottom_pad
+          } else {
+            2.5
+          }
+          pad_mult <- if (i == n_g) bottom_pad_mult else 0.2
+          y_min <- min(y_min, center_y - height_g - input$row_spacing * pad_mult)
           
           group_diamond_list[[g]]  <- diamond_df_g
           group_diamond_centers[g] <- center_y
@@ -2563,9 +2814,12 @@ server <- function(input, output, session) {
     p <- p + scale_size_continuous(range = c(2, 6), guide = "none")
     
     if (grouping_enabled) {
+      grp_levels    <- levels(plot_data$group)
+      user_colors   <- get_group_colors(grp_levels)
+      names(user_colors) <- grp_levels
       p <- p +
-        scale_colour_viridis_d(end = 0.9) +
-        scale_fill_viridis_d(end = 0.9)
+        scale_colour_manual(values = user_colors) +
+        scale_fill_manual(values = user_colors)
     }
     
     # ---- OVERALL DIAMOND ----------------------------------------------------
@@ -2733,9 +2987,8 @@ server <- function(input, output, session) {
         # Get group levels in same order as diamonds
         group_levels <- names(group_diamond_centers)
         
-        # Get colors for each group (from viridis palette) - match the diamond colors
-        n_groups <- length(group_levels)
-        group_colors <- viridis::viridis(n_groups, end = 0.9)
+        # Get user-defined colours (consistent with diamond colours)
+        group_colors <- get_group_colors(group_levels)
         names(group_colors) <- group_levels
         
         for (i in seq_along(group_levels)) {
@@ -3006,8 +3259,7 @@ server <- function(input, output, session) {
       labs(
         x = "Effect Size",
         y = NULL,
-        title    = forest_pkg$plot_title,
-        subtitle = forest_pkg$subtitle
+        title    = forest_pkg$plot_title
       ) +
       theme_minimal(base_size = input$forest_text_size) +
       theme(
@@ -3015,7 +3267,6 @@ server <- function(input, output, session) {
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         plot.title       = element_text(face = "bold", color = "black"),
-        plot.subtitle    = element_text(color = "black"),
         axis.text.y      = element_text(hjust = 0, size = input$forest_text_size * 0.75, color = "black"),
         axis.text.x      = element_text(color = "black"),
         axis.title.x     = element_text(hjust = (bracket_center - x_plot_min) / (x_plot_max - x_plot_min), color = "black"),
@@ -3035,7 +3286,33 @@ server <- function(input, output, session) {
         size = "none"  # Hide the size legend (weight)
       )
     
+    # Store subtitle in values so it can be shown as a caption below the plot
+    values$forest_subtitle <- forest_pkg$subtitle
+    
     p
+  })
+  
+  # Caption output for the forest plot (replaces the in-plot subtitle)
+  output$forest_plot_caption <- renderText({
+    req(values$forest_subtitle)
+    values$forest_subtitle
+  })
+  
+  output$forest_caption_ui <- renderUI({
+    cap <- values$forest_subtitle
+    if (is.null(cap) || !nzchar(cap)) return(NULL)
+    div(
+      style = paste(
+        "text-align: center;",
+        "font-size: 13px;",
+        "color: #333;",
+        "padding: 6px 20px 10px 20px;",
+        "border-top: 1px solid #ddd;",
+        "margin-top: -4px;",
+        "margin-bottom: 6px;"
+      ),
+      cap
+    )
   })
   
   output$enhanced_forest <- renderPlot({
@@ -3150,6 +3427,87 @@ server <- function(input, output, session) {
   
   # =================== FUNNEL PLOT (FIXED) ===================================
   
+  # Reactive: auto-detect what each funnel plot point represents
+  funnel_point_label <- reactive({
+    req(values$es_data)
+    
+    model_to_use <- if(!is.null(values$forest_model)) {
+      values$forest_model
+    } else if(!is.null(values$ma_model)) {
+      values$ma_model
+    } else {
+      NULL
+    }
+    
+    is_multilevel  <- !is.null(model_to_use) && inherits(model_to_use, "rma.mv")
+    n_studies      <- length(unique(values$es_data$StudyID))
+    n_effects      <- nrow(values$es_data)
+    is_between_grp <- !is.null(values$forest_data_type) && values$forest_data_type == "diff"
+    
+    if(is_between_grp && n_effects <= n_studies) {
+      # One point per study in between-group mode
+      "Studies"
+    } else if(is_multilevel || n_effects > n_studies) {
+      # Multiple effect sizes per study: points are individual measures/outcomes
+      "Effect sizes"
+    } else {
+      "Studies"
+    }
+  })
+  
+  # Preview output: shows what label will be used (shown in the UI panel)
+  output$funnel_legend_label_preview <- renderUI({
+    auto_label <- tryCatch(funnel_point_label(), error = function(e) "Studies")
+    user_label <- trimws(input$funnel_legend_label)
+    
+    effective_label <- if(nchar(user_label) > 0) user_label else auto_label
+    
+    source_text <- if(nchar(user_label) > 0) {
+      span(style = "color: #1565c0;", icon("pencil"), " Using your override")
+    } else {
+      span(style = "color: #2e7d32;", icon("magic"), " Auto-detected")
+    }
+    
+    div(style = "background: white; border: 1px solid #ccc; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;",
+        div(style = "font-size: 11px; color: #666;", source_text),
+        div(style = "font-size: 14px; font-weight: bold; color: #333;",
+            icon("tag"), " Active label: ",
+            span(style = "color: #1565c0;", paste0('"', effective_label, '"')))
+    )
+  })
+  
+  # Helper: resolve the legend label to use (user override wins; else auto)
+  get_funnel_legend_label <- function() {
+    user_label <- trimws(input$funnel_legend_label)
+    if(nchar(user_label) > 0) {
+      return(user_label)
+    }
+    tryCatch(funnel_point_label(), error = function(e) "Studies")
+  }
+  
+  # Helper: draw a custom contour-enhanced funnel legend replacing metafor's default.
+  # col1/col2/col3 correspond to the three shading zones (outermost to innermost).
+  draw_custom_funnel_legend <- function(point_label,
+                                        col1 = "white",
+                                        col2 = "gray75",
+                                        col3 = "gray60") {
+    legend("topright",
+           legend = c(
+             point_label,
+             "0.10 < p \u2264 1.00",
+             "0.05 < p \u2264 0.10",
+             "0.01 < p \u2264 0.05"
+           ),
+           pch    = c(19, 22, 22, 22),
+           col    = "black",
+           pt.bg  = c(NA, col1, col2, col3),
+           pt.cex = c(1, 1.5, 1.5, 1.5),
+           bty    = "o",
+           bg     = "white",
+           box.col = "black",
+           cex    = 0.8)
+  }
+  
   output$funnel_plot <- renderPlot({
     # Trigger on update button
     input$update_funnel
@@ -3167,10 +3525,17 @@ server <- function(input, output, session) {
     
     # Use isolate to prevent reactive dependencies
     isolate({
+      point_label <- get_funnel_legend_label()
+      
       # Create funnel plot
       if(input$contour_enhanced) {
-        funnel(model_to_use, level = c(90, 95, 99), 
-               shade = c("white", "gray75", "gray60"), legend = TRUE)
+        # Draw WITHOUT built-in legend so we can supply our own with the correct label
+        c1 <- if(!is.null(input$contour_col1) && nzchar(input$contour_col1)) input$contour_col1 else "white"
+        c2 <- if(!is.null(input$contour_col2) && nzchar(input$contour_col2)) input$contour_col2 else "gray75"
+        c3 <- if(!is.null(input$contour_col3) && nzchar(input$contour_col3)) input$contour_col3 else "gray60"
+        funnel(model_to_use, level = c(90, 95, 99),
+               shade = c(c1, c2, c3), legend = FALSE)
+        draw_custom_funnel_legend(point_label, col1 = c1, col2 = c2, col3 = c3)
       } else {
         funnel(model_to_use)
       }
@@ -3526,11 +3891,20 @@ server <- function(input, output, session) {
       values$forest_data_type == "diff"
     
     tryCatch({
+      point_label <- get_funnel_legend_label()
+      
       # The trimfill_model is already aggregated if we had rma.mv
-      funnel(values$trimfill_model, level = c(90, 95, 99),
-             shade = c("white", "gray55", "gray75"), 
-             refline = 0,
-             main = "Trim-and-Fill Adjusted Funnel Plot")
+      {
+        c1 <- if(!is.null(input$contour_col1) && nzchar(input$contour_col1)) input$contour_col1 else "white"
+        c2 <- if(!is.null(input$contour_col2) && nzchar(input$contour_col2)) input$contour_col2 else "gray55"
+        c3 <- if(!is.null(input$contour_col3) && nzchar(input$contour_col3)) input$contour_col3 else "gray75"
+        funnel(values$trimfill_model, level = c(90, 95, 99),
+               shade = c(c1, c2, c3),
+               refline = 0,
+               legend = FALSE,
+               main = "Trim-and-Fill Adjusted Funnel Plot")
+        draw_custom_funnel_legend(point_label, col1 = c1, col2 = c2, col3 = c3)
+      }
       
       # Add appropriate note based on analysis type
       if(inherits(values$ma_model, "rma.mv")) {
@@ -4286,9 +4660,15 @@ server <- function(input, output, session) {
       }
       
       if(!is.null(values$ma_model)) {
+        point_label <- get_funnel_legend_label()
+        
         if(input$contour_enhanced) {
-          funnel(values$ma_model, level = c(90, 95, 99), 
-                 shade = c("white", "gray75", "gray60"), legend = TRUE)
+          c1 <- if(!is.null(input$contour_col1) && nzchar(input$contour_col1)) input$contour_col1 else "white"
+          c2 <- if(!is.null(input$contour_col2) && nzchar(input$contour_col2)) input$contour_col2 else "gray75"
+          c3 <- if(!is.null(input$contour_col3) && nzchar(input$contour_col3)) input$contour_col3 else "gray60"
+          funnel(values$ma_model, level = c(90, 95, 99),
+                 shade = c(c1, c2, c3), legend = FALSE)
+          draw_custom_funnel_legend(point_label, col1 = c1, col2 = c2, col3 = c3)
         } else {
           funnel(values$ma_model)
         }
@@ -4326,12 +4706,21 @@ server <- function(input, output, session) {
       }
       
       # Match the displayed plot - include significance contours
-      funnel(values$trimfill_model,
-             level = c(90, 95, 99),
-             shade = c("white", "gray55", "gray75"),
-             refline = 0,
-             xlab = "Effect Size",
-             main = "Trim-and-Fill Adjusted Funnel Plot")
+      point_label <- get_funnel_legend_label()
+      
+      {
+        c1 <- if(!is.null(input$contour_col1) && nzchar(input$contour_col1)) input$contour_col1 else "white"
+        c2 <- if(!is.null(input$contour_col2) && nzchar(input$contour_col2)) input$contour_col2 else "gray55"
+        c3 <- if(!is.null(input$contour_col3) && nzchar(input$contour_col3)) input$contour_col3 else "gray75"
+        funnel(values$trimfill_model,
+               level = c(90, 95, 99),
+               shade = c(c1, c2, c3),
+               refline = 0,
+               legend = FALSE,
+               xlab = "Effect Size",
+               main = "Trim-and-Fill Adjusted Funnel Plot")
+        draw_custom_funnel_legend(point_label, col1 = c1, col2 = c2, col3 = c3)
+      }
       
       # Add note if based on aggregated data
       if(inherits(values$ma_model, "rma.mv")) {
@@ -4348,5 +4737,4 @@ server <- function(input, output, session) {
 
 # Run app
 shinyApp(ui = ui, server = server)
-
 
