@@ -11,6 +11,7 @@ library(DT)
 library(metafor)
 library(clubSandwich)
 library(dplyr)
+library(rlang)
 library(tidyr)
 library(ggplot2)
 library(ggtext)
@@ -18,6 +19,8 @@ library(readxl)
 library(plotly)
 library(viridis)
 library(colourpicker)
+library(patchwork)
+library(gridExtra)
 
 # ========================= UI ================================================
 ui <- dashboardPage(
@@ -506,7 +509,7 @@ ui <- dashboardPage(
                                           "One per study (averaged)" = "averaged",
                                           "Multiple per study (by outcome)" = "multiple"
                                         ),
-                                        selected = "averaged"),
+                                        selected = "multiple"),
                            
                            # Matching variables for multiple differences
                            conditionalPanel(
@@ -551,8 +554,8 @@ ui <- dashboardPage(
               column(3,
                      div(class = "control-section",
                          h4("Appearance", style = "margin-top: 0;"),
-                         colourInput("forest_color", "Line color:", value = "#1b9e77"),
-                         colourInput("forest_fill_color", "Fill color:", value = "#1b9e77"),
+                         colourInput("forest_color", "Line color:", value = "#000000"),
+                         colourInput("forest_fill_color", "Fill color:", value = "#000000"),
                          sliderInput("row_spacing", "Row spacing:",
                                      min = 0.3, max = 2, value = 1, step = 0.1),
                          sliderInput("forest_text_size", "Text size:",
@@ -1110,7 +1113,13 @@ server <- function(input, output, session) {
       }
       
       values$filtered_data <- values$raw_data
-      values$active_filter_vars <- character(0)
+      
+      # Auto-activate common filter variables if they exist in the data
+      auto_filter_candidates <- c("Group", "Measure", "Limb", 
+                                  "Trained_Untrained_Muscle_Group", 
+                                  "Immobilisation_Type")
+      values$active_filter_vars <- intersect(auto_filter_candidates, 
+                                             names(values$raw_data))
       
       values$available_cat_vars <- names(values$raw_data)[sapply(values$raw_data, function(col) {
         is.character(col) || is.factor(col) || length(unique(na.omit(col))) <= 20
@@ -1309,24 +1318,38 @@ server <- function(input, output, session) {
     }
   })
   
-  observeEvent(input$apply_filters, {
+  # Helper function: apply filters using current checkbox states (or all values if no UI yet)
+  apply_current_filters <- function(notify = TRUE) {
     req(values$raw_data)
     data <- values$raw_data
     filter_details <- list()
-    
     for(var in values$active_filter_vars) {
       if(var %in% names(data)) {
         selected <- input[[paste0("filter_cat_", var)]]
-        if(!is.null(selected) && length(selected) > 0) {
-          data <- data %>% filter(.data[[var]] %in% selected)
-          filter_details[[var]] <- selected
+        # If UI hasn't rendered yet, default to all values (keep everything)
+        if(is.null(selected) || length(selected) == 0) {
+          selected <- sort(unique(na.omit(data[[var]])))
         }
+        data <- data %>% filter(.data[[var]] %in% selected)
+        filter_details[[var]] <- selected
       }
     }
     values$filtered_data <- data
     values$filter_history <- filter_details
-    showNotification(paste("Filters applied.", nrow(data), "rows remaining."), type = "message")
+    if(notify) showNotification(paste("Filters applied.", nrow(data), "rows remaining."), type = "message")
+  }
+  
+  observeEvent(input$apply_filters, {
+    apply_current_filters(notify = TRUE)
   })
+  
+  # Auto-apply filters whenever active_filter_vars changes (e.g. on data load)
+  observeEvent(values$active_filter_vars, {
+    req(values$raw_data)
+    if(length(values$active_filter_vars) > 0) {
+      apply_current_filters(notify = FALSE)
+    }
+  }, ignoreNULL = TRUE, ignoreInit = TRUE)
   
   observeEvent(input$reset_filters, {
     values$filtered_data <- values$raw_data
@@ -1629,11 +1652,12 @@ server <- function(input, output, session) {
     
     all_match_choices <- c(available_match_cols, other_cols)
     
-    # Don't pre-select any match variables - user should explicitly choose
-    # This prevents confusion about when outcome labels appear
+    # Pre-select Muscle_Group and Measure_Type if available, otherwise first two cols
+    default_match <- intersect(c("Muscle_Group", "Measure_Type"), all_match_choices)
+    if(length(default_match) == 0) default_match <- head(all_match_choices, 2)
     updateSelectInput(session, "diff_match_vars",
                       choices = all_match_choices,
-                      selected = character(0))  # Empty selection by default
+                      selected = default_match)
     
     # Update treatment subgroup variable choices
     # Prioritize Training_Type and similar columns
@@ -1647,7 +1671,7 @@ server <- function(input, output, session) {
     
     updateSelectInput(session, "diff_treatment_subgroup",
                       choices = subgroup_choices,
-                      selected = "")  # Don't auto-select, let user choose
+                      selected = default_subgroup)  # Auto-select Training_Type if available
   })
   
   # =================== BASIC META-ANALYSIS ===================================
@@ -2041,37 +2065,30 @@ server <- function(input, output, session) {
       detail_vars <- input$detail_vars
       
       if(!is.null(detail_vars) && length(detail_vars) > 0 && input$show_study_details) {
-        # User wants to show study details - add selected columns to labels
         available_details <- intersect(detail_vars, names(data))
-        
         if(length(available_details) > 0) {
-          # Create detail string for each row
-          data$label <- sapply(1:nrow(data), function(i) {
-            base_label <- paste(data$StudyID[i], data$Group[i], sep = " - ")
-            
-            detail_parts <- sapply(available_details, function(col) {
-              val <- data[i, col]
-              if(!is.na(val) && val != "") as.character(val) else NA
-            })
-            detail_parts <- detail_parts[!is.na(detail_parts)]
-            
-            if(length(detail_parts) > 0) {
-              paste0(base_label, "  |  ", paste(detail_parts, collapse = "  |  "))
-            } else {
-              base_label
-            }
-          })
-          
-          # Store for header construction
+          # Store each detail var as its own label_col_N column (col 1=StudyID, 2=Group, 3+=details)
+          for(dv_i in seq_along(available_details)) {
+            col_nm <- paste0("label_col_", 2L + dv_i)
+            data[[col_nm]] <- as.character(data[[available_details[dv_i]]])
+          }
           data$match_vars_used <- paste(available_details, collapse = "|")
+          # Keep label as joined string for slab= in rma
+          data$label <- apply(data, 1, function(r) {
+            parts <- c(r[["StudyID"]], r[["Group"]])
+            for(dv_i in seq_along(available_details)) {
+              col_nm <- paste0("label_col_", 2L + dv_i)
+              v <- r[[col_nm]]
+              if(!is.na(v) && nzchar(v)) parts <- c(parts, v)
+            }
+            paste(parts, collapse = "  |  ")
+          })
         } else {
-          # No valid detail columns
-          data$label <- paste(data$StudyID, data$Group, sep = " - ")
+          data$label <- paste(data$StudyID, data$Group, sep = "  |  ")
           data$match_vars_used <- ""
         }
       } else {
-        # No details requested - simple labels
-        data$label <- paste(data$StudyID, data$Group, sep = " - ")
+        data$label <- paste(data$StudyID, data$Group, sep = "  |  ")
         data$match_vars_used <- ""
       }
       
@@ -2239,6 +2256,13 @@ server <- function(input, output, session) {
         results_list <- list()
         
         # Get unique treatment combinations
+        # Helper to add first-value summaries for each match_var column
+        mv_summarise_exprs <- if(length(match_vars) > 0) {
+          lapply(setNames(match_vars, match_vars), function(mv) {
+            if(mv %in% names(treatment_data)) rlang::expr(first(!!rlang::sym(mv))) else rlang::expr(NA_character_)
+          })
+        } else list()
+        
         if(use_treatment_subgroup) {
           treatment_combos <- treatment_data %>%
             group_by(StudyID, OutcomeKey, TreatmentSubgroup) %>%
@@ -2246,6 +2270,7 @@ server <- function(input, output, session) {
               yi = mean(yi, na.rm = TRUE),
               vi = mean(vi, na.rm = TRUE),
               OutcomeLabel = first(OutcomeLabel),
+              !!!mv_summarise_exprs,
               .groups = "drop"
             )
         } else {
@@ -2255,6 +2280,7 @@ server <- function(input, output, session) {
               yi = mean(yi, na.rm = TRUE),
               vi = mean(vi, na.rm = TRUE),
               OutcomeLabel = first(OutcomeLabel),
+              !!!mv_summarise_exprs,
               .groups = "drop"
             )
           treatment_combos$TreatmentSubgroup <- NA
@@ -2290,30 +2316,10 @@ server <- function(input, output, session) {
         merged_data$ci_lower <- merged_data$yi_diff - 1.96 * merged_data$se_diff
         merged_data$ci_upper <- merged_data$yi_diff + 1.96 * merged_data$se_diff
         
-        # Build labels - include outcome details to differentiate duplicates
-        merged_data$label <- sapply(1:nrow(merged_data), function(i) {
-          row <- merged_data[i, ]
-          
-          # Base label: StudyID
-          label_parts <- row$StudyID
-          
-          # Add training type if using subgroup split
-          if(use_treatment_subgroup && !is.na(row$TreatmentSubgroup)) {
-            label_parts <- paste0(label_parts, "  |  ", row$TreatmentSubgroup)
-          }
-          
-          # Add outcome details if available (ALWAYS include to differentiate duplicates)
-          if(!is.na(row$OutcomeLabel) && row$OutcomeLabel != "") {
-            label_parts <- paste0(label_parts, "  |  ", row$OutcomeLabel)
-          }
-          
-          label_parts
-        })
-        
-        # Create final data frame
+        # Create final data frame - store label columns SEPARATELY so forest plot
+        # can position each in its own annotate column without splitting strings.
         data_wide <- data.frame(
           StudyID = merged_data$StudyID,
-          label = merged_data$label,
           yi = merged_data$yi_diff,
           vi = merged_data$vi_diff,
           se = merged_data$se_diff,
@@ -2323,17 +2329,40 @@ server <- function(input, output, session) {
           stringsAsFactors = FALSE
         )
         
-        # Store match_vars for header construction
+        # Add TreatmentSubgroup column for grouping/ordering
+        if(use_treatment_subgroup) {
+          data_wide$TreatmentSubgroup <- merged_data$TreatmentSubgroup
+        }
+        
+        # Store each match_var as its own column (label_col_2, label_col_3, ...)
+        # Col 1 = StudyID always; col 2 = TreatmentSubgroup if present; then match_vars
+        col_offset <- if(use_treatment_subgroup) 2L else 1L
         if(length(match_vars) > 0) {
+          for(mv_i in seq_along(match_vars)) {
+            mv <- match_vars[mv_i]
+            col_nm <- paste0("label_col_", col_offset + mv_i)
+            data_wide[[col_nm]] <- if(mv %in% names(merged_data)) as.character(merged_data[[mv]]) else NA_character_
+          }
           data_wide$match_vars_used <- paste(match_vars, collapse = "|")
         } else {
           data_wide$match_vars_used <- ""
         }
         
-        # Add TreatmentSubgroup column for grouping/ordering
-        if(use_treatment_subgroup) {
-          data_wide$TreatmentSubgroup <- merged_data$TreatmentSubgroup
-        }
+        # Build the joined label string (used by rma slab= for funnel plot only)
+        data_wide$label <- apply(data_wide, 1, function(row) {
+          parts <- c(row[["StudyID"]])
+          if(use_treatment_subgroup && !is.na(row[["TreatmentSubgroup"]])) {
+            parts <- c(parts, row[["TreatmentSubgroup"]])
+          }
+          if(length(match_vars) > 0) {
+            for(mv_i in seq_along(match_vars)) {
+              col_nm <- paste0("label_col_", col_offset + mv_i)
+              val <- row[[col_nm]]
+              if(!is.na(val) && nzchar(val)) parts <- c(parts, val)
+            }
+          }
+          paste(parts, collapse = "  |  ")
+        })
         
         # Add IDs for three-level model
         data_wide$EffectSizeID <- 1:nrow(data_wide)
@@ -2556,6 +2585,13 @@ server <- function(input, output, session) {
       match_vars_used = if("match_vars_used" %in% names(data)) data$match_vars_used else "",
       stringsAsFactors = FALSE
     )
+    # Copy StudyID and all label_col_* columns into plot_data so label_matrix
+    # can be built directly from plot_data after reordering.
+    plot_data$StudyID <- data$StudyID
+    if("TreatmentSubgroup" %in% names(data))
+      plot_data$TreatmentSubgroup <- data$TreatmentSubgroup
+    for(cn in grep("^label_col_", names(data), value = TRUE))
+      plot_data[[cn]] <- data[[cn]]
     
     # Attach grouping variable to plot_data (if used)
     if (grouping_enabled) {
@@ -2845,10 +2881,10 @@ server <- function(input, output, session) {
         geom_polygon(
           data  = diamond_df,
           aes(x = x, y = y),
-          fill  = input$forest_fill_color,
+          fill  = "black",
           color = "black",
           size  = input$point_outline_thickness,
-          alpha = input$line_darkness * 0.75,
+          alpha = input$line_darkness,
           inherit.aes = FALSE
         )
     }
@@ -2868,180 +2904,30 @@ server <- function(input, output, session) {
         alpha      = 0.6 * input$line_darkness
       )
     
-    # ---- TEXT STATS COLUMN --------------------------------------------------
+    # ---- STATS COLUMN: compute positions only (drawing handled later) ----------
+    # stat_x_pos is needed by the later column-layout block.
+    x_range <- diff(range(c(plot_data$ci_lower, plot_data$ci_upper)))
     if (input$show_effect_values || input$show_ci_values || input$show_weights) {
-      # Calculate the full data range including group diamonds if present
       data_max_for_stats <- max(plot_data$ci_upper)
-      
-      # Include group diamond CIs in the calculation if they exist
       if (grouping_enabled &&
           isTRUE(input$show_group_diamonds) &&
           !is.null(values$forest_group_models) &&
           length(values$forest_group_models) > 0) {
-        
         group_cis_upper <- sapply(values$forest_group_models, function(gm) {
-          if(is.null(gm)) return(NA)
-          gm$ci.ub
+          if (is.null(gm)) return(NA); gm$ci.ub
         })
-        
-        if(any(!is.na(group_cis_upper))) {
+        if (any(!is.na(group_cis_upper)))
           data_max_for_stats <- max(data_max_for_stats, group_cis_upper, na.rm = TRUE)
-        }
       }
-      
-      # Also include overall diamond if shown
-      if (input$show_overall_diamond) {
+      if (input$show_overall_diamond)
         data_max_for_stats <- max(data_max_for_stats, model$ci.ub)
-      }
       
-      x_range    <- diff(range(c(plot_data$ci_lower, plot_data$ci_upper)))
-      plot_x_max <- data_max_for_stats + x_range * 0.15  # Increased buffer
-      stat_x_pos <- plot_x_max + x_range * 0.6  # Increased spacing from 0.4 to 0.6
-      
-      # Header will be added later at header_y position (same row as "Study" header)
-      # Store stat_x_pos for use in header section
-      stats_header_x <- stat_x_pos
-      
-      for (i in 1:nrow(plot_data)) {
-        label_parts <- c()
-        
-        if (input$show_effect_values) {
-          label_parts <- c(label_parts, sprintf("%6.2f", plot_data$yi[i]))
-        }
-        if (input$show_ci_values) {
-          label_parts <- c(
-            label_parts,
-            sprintf("[%6.2f,%6.2f]", plot_data$ci_lower[i], plot_data$ci_upper[i])
-          )
-        }
-        if (input$show_weights) {
-          label_parts <- c(label_parts, sprintf("w=%5.1f%%", plot_data$weight[i]))
-        }
-        
-        if (length(label_parts) > 0) {
-          p <- p +
-            annotate(
-              "text",
-              x = stat_x_pos,
-              y = plot_data$row[i],
-              label = paste(label_parts, collapse = " "),
-              hjust  = 0,
-              size   = input$forest_text_size * 0.28,
-              color  = "black",
-              family = "mono"
-            )
-        }
-      }
-      
-      if (input$show_overall_diamond) {
-        overall_label_parts <- c()
-        
-        if (input$show_effect_values) {
-          overall_label_parts <- c(overall_label_parts, sprintf("%6.2f", coef(model)))
-        }
-        if (input$show_ci_values) {
-          overall_label_parts <- c(
-            overall_label_parts,
-            sprintf("[%6.2f,%6.2f]", model$ci.lb, model$ci.ub)
-          )
-        }
-        if (input$show_overall_pvalue) {
-          p_val <- model$pval
-          p_text <- if (p_val < 0.001) {
-            "p<0.001"
-          } else if (p_val < 0.01) {
-            sprintf("p=%.3f", p_val)
-          } else {
-            sprintf("p=%.2f", p_val)
-          }
-          overall_label_parts <- c(overall_label_parts, p_text)
-        }
-        
-        if (length(overall_label_parts) > 0) {
-          label_text <- paste(overall_label_parts, collapse = " ")
-          
-          # Simple black text (no background box)
-          p <- p +
-            annotate(
-              "text",
-              x = stat_x_pos,
-              y = diamond_center_y,
-              label = label_text,
-              hjust  = 0,
-              size   = input$forest_text_size * 0.32,
-              fontface = "bold",
-              color    = "black",  # Black for consistency with groups
-              family   = "mono"
-            )
-        }
-      }
-      
-      # Add color-coded group statistics (if group diamonds are shown)
-      if (grouping_enabled &&
-          isTRUE(input$show_group_diamonds) &&
-          !is.null(values$forest_group_models) &&
-          length(values$forest_group_models) > 0 &&
-          !is.null(group_diamond_centers) &&
-          length(group_diamond_centers) > 0) {
-        
-        # Get group levels in same order as diamonds
-        group_levels <- names(group_diamond_centers)
-        
-        # Get user-defined colours (consistent with diamond colours)
-        group_colors <- get_group_colors(group_levels)
-        names(group_colors) <- group_levels
-        
-        for (i in seq_along(group_levels)) {
-          g <- group_levels[i]
-          gm <- values$forest_group_models[[g]]
-          if (is.null(gm)) next
-          
-          center_y <- group_diamond_centers[g]
-          group_label_parts <- c()
-          
-          if (input$show_effect_values) {
-            group_label_parts <- c(group_label_parts, sprintf("%6.2f", coef(gm)))
-          }
-          if (input$show_ci_values) {
-            group_label_parts <- c(group_label_parts, 
-                                   sprintf("[%6.2f,%6.2f]", gm$ci.lb, gm$ci.ub))
-          }
-          if (input$show_overall_pvalue) {
-            p_val <- gm$pval
-            p_text <- if (p_val < 0.001) {
-              "p<0.001"
-            } else if (p_val < 0.01) {
-              sprintf("p=%.3f", p_val)
-            } else {
-              sprintf("p=%.2f", p_val)
-            }
-            group_label_parts <- c(group_label_parts, p_text)
-          }
-          
-          if (length(group_label_parts) > 0) {
-            label_text <- paste(group_label_parts, collapse = " ")
-            
-            # Simple black text (no background boxes)
-            p <- p +
-              annotate(
-                "text",
-                x = stat_x_pos,
-                y = center_y,
-                label = label_text,
-                hjust = 0,
-                size = input$forest_text_size * 0.32,  # Match overall font size
-                fontface = "bold",
-                color = "black",  # Black for easy readability
-                family = "mono"
-              )
-          }
-        }
-      }
-      
+      plot_x_max <- data_max_for_stats + x_range * 0.15
+      stat_x_pos <- plot_x_max + x_range * 0.6
       x_plot_min <- min(plot_data$ci_lower, model$ci.lb) - x_range * 0.1
-      x_plot_max <- stat_x_pos + x_range * 1.0  # Increased from 0.7 to 1.0 for more text space
+      x_plot_max <- stat_x_pos + x_range * 1.0
     } else {
-      x_range    <- diff(range(c(plot_data$ci_lower, plot_data$ci_upper)))
+      stat_x_pos <- NULL
       x_plot_min <- min(plot_data$ci_lower, model$ci.lb) - x_range * 0.1
       x_plot_max <- max(plot_data$ci_upper, model$ci.ub) + x_range * 0.1
     }
@@ -3119,22 +3005,7 @@ server <- function(input, output, session) {
     # Store for later use in y-axis setup
     # Headers will be added via y-axis labels and theme adjustments
     
-    # Add "Effect [95% CI] Weight" header if stats are shown - position at top of stats column
-    if (exists("stats_header_x")) {
-      stats_header_y <- max(plot_data$row) + input$row_spacing * 0.8
-      p <- p +
-        annotate(
-          "text",
-          x = stats_header_x,
-          y = stats_header_y,
-          label = "Effect [95% CI] Weight",
-          hjust = 0,
-          size = input$forest_text_size * 0.32,
-          fontface = "bold",
-          color = "black",
-          family = "mono"
-        )
-    }
+    # Right-side column headers are now drawn in the column-layout block below.
     
     # ---- BRACKET-STYLE X-AXIS LINE ---------------------------------------------
     # Calculate bracket position (just above the overall diamond area)
@@ -3168,125 +3039,371 @@ server <- function(input, output, session) {
         size = 0.5
       )
     
-    # ---- Y-AXIS LABELS ------------------------------------------------------
-    if (input$show_overall_diamond) {
-      y_breaks <- c(plot_data$row, diamond_center_y)
-      y_labels <- c(plot_data$study, "Overall")
-    } else {
-      y_breaks <- plot_data$row
-      y_labels <- plot_data$study
+    # ---- Y-AXIS LABELS AND LEFT COLUMN LAYOUT ----------------------------------
+    # Each column is drawn as a separate annotate("text") call at a fixed x
+    # position in the left margin (clip = "off").  Bold headers match.
+    
+    # Helper: title-case converter
+    to_title_case <- function(text) {
+      text <- gsub("_", " ", text)
+      tools::toTitleCase(text)
     }
     
-    # Add group-diamond rows under "Overall" if used
+    # --- Build label_matrix directly from plot_data (already sorted) ------------
+    # Columns: 1=StudyID, 2=TreatmentSubgroup (if diff+subgroup), then label_col_* vars
+    label_col_nms <- sort(grep("^label_col_", names(plot_data), value = TRUE))
+    
+    left_cols <- list(plot_data$StudyID)
+    if(input$forest_data_type == "diff" && has_treatment_subgroup &&
+       "TreatmentSubgroup" %in% names(plot_data)) {
+      left_cols <- c(left_cols, list(as.character(plot_data$TreatmentSubgroup)))
+    } else if(input$forest_data_type == "arm" && "Group" %in% names(data)) {
+      left_cols <- c(left_cols, list(as.character(data$Group[ord])))
+    }
+    for(cn in label_col_nms) left_cols <- c(left_cols, list(as.character(plot_data[[cn]])))
+    
+    label_matrix  <- do.call(cbind, left_cols)
+    n_label_cols  <- ncol(label_matrix)
+    
+    # --- Build header parts (same order as label_matrix columns) ----------------
+    header_parts <- c("Study")
+    if(input$forest_data_type == "arm" && "Group" %in% names(data)) {
+      header_parts <- c(header_parts, "Group")
+    }
+    if(has_treatment_subgroup && input$forest_data_type == "diff") {
+      header_parts <- c(header_parts, "Training Type")
+    }
+    if("match_vars_used" %in% names(plot_data)) {
+      match_vars_str <- unique(plot_data$match_vars_used)[1]
+      if(!is.na(match_vars_str) && nzchar(match_vars_str)) {
+        match_var_names  <- strsplit(match_vars_str, "\\|")[[1]]
+        match_var_labels <- sapply(match_var_names, to_title_case)
+        header_parts     <- c(header_parts, match_var_labels)
+      }
+    }
+    while (length(header_parts) < n_label_cols) header_parts <- c(header_parts, "")
+    header_parts <- header_parts[seq_len(n_label_cols)]
+    
+    header_parts <- header_parts[seq_len(n_label_cols)]
+    
+    # --- Y-axis: show only "Overall" / "Group: X" labels; study rows get "" ---
+    # We still need y_breaks for all rows so spacing is correct.
+    y_breaks_studies <- plot_data$row
+    # y-axis labels for study rows: empty string (text drawn via annotate instead)
+    y_labels_studies  <- rep("", nrow(plot_data))
+    
+    if (input$show_overall_diamond) {
+      y_breaks <- c(y_breaks_studies, diamond_center_y)
+      y_labels <- c(y_labels_studies, "Overall")
+    } else {
+      y_breaks <- y_breaks_studies
+      y_labels <- y_labels_studies
+    }
+    
     if (grouping_enabled &&
         isTRUE(input$show_group_diamonds) &&
         !is.null(group_diamond_centers) &&
         length(group_diamond_centers) > 0) {
-      
       y_breaks <- c(y_breaks, unname(group_diamond_centers))
-      y_labels <- c(
-        y_labels,
-        paste0("Group: ", names(group_diamond_centers))
-      )
+      y_labels <- c(y_labels, paste0("Group: ", names(group_diamond_centers)))
     }
     
-    # Add header row at the top of y-axis labels
-    header_y_pos <- max(plot_data$row) + input$row_spacing * 0.9
-    y_breaks <- c(header_y_pos, y_breaks)
+    # =========================================================================
+    # PATCHWORK LAYOUT: left table | forest plot | right stats table
+    # Each panel is a separate ggplot. patchwork assembles them with
+    # exact proportional widths, giving pixel-perfect column alignment
+    # that is impossible to achieve with annotate() or ggtext alone.
+    # =========================================================================
     
-    # Create header label - title case, dynamic based on actual label structure
+    fsize    <- input$forest_text_size        # base font size (pts in ggplot = mm*2.835)
+    txt_sz   <- fsize * 0.28                  # ggplot geom_text size units
+    txt_bold <- fsize * 0.30
     
-    # Helper function to convert to title case with special handling
-    to_title_case <- function(text) {
-      # Replace underscores with spaces
-      text <- gsub("_", " ", text)
-      # Capitalize first letter of each word
-      text <- tools::toTitleCase(text)
-      text
+    # ── Shared y scale (same breaks + limits used by all three panels) ────────
+    y_row_breaks <- plot_data$row
+    y_all_breaks <- y_row_breaks
+    y_all_labels_centre <- rep("", length(y_row_breaks))   # centre panel: no y labels
+    
+    header_y <- max(plot_data$row) + input$row_spacing * 0.9
+    
+    extra_y_breaks <- c()
+    extra_y_labels <- c()
+    if(input$show_overall_diamond) {
+      extra_y_breaks <- c(extra_y_breaks, diamond_center_y)
+      extra_y_labels <- c(extra_y_labels, "Overall")
+    }
+    if(grouping_enabled && isTRUE(input$show_group_diamonds) &&
+       !is.null(group_diamond_centers) && length(group_diamond_centers) > 0) {
+      extra_y_breaks <- c(extra_y_breaks, unname(group_diamond_centers))
+      extra_y_labels <- c(extra_y_labels, paste0("Group: ", names(group_diamond_centers)))
     }
     
-    # Build header dynamically
-    header_parts <- c("Study")
+    all_y_breaks <- c(header_y, y_all_breaks, extra_y_breaks)
+    ylims        <- c(y_min, y_max)
+    y_expand     <- expansion(mult = c(0.02, 0.02))
     
-    # For arm-level, add Group column
-    if(input$forest_data_type == "arm") {
-      header_parts <- c(header_parts, "Group")
+    # ── Helper: blank theme for table panels ─────────────────────────────────
+    theme_table <- function() {
+      theme_void(base_size = fsize) +
+        theme(
+          plot.background  = element_rect(fill = "white", color = NA),
+          panel.background = element_rect(fill = "white", color = NA),
+          plot.margin      = margin(2, 4, 2, 4)
+        )
     }
     
-    # Add Training Type if present (for between-group differences with split)
-    if(has_treatment_subgroup && input$forest_data_type == "diff") {
-      header_parts <- c(header_parts, "Training Type")
+    # ── LEFT TABLE PANEL ──────────────────────────────────────────────────────
+    # x-scale uses ABSOLUTE character units — column i starts at col_x[i],
+    # which is the cumulative sum of all previous column widths plus fixed gaps.
+    # gap_chars is a fixed number of characters between columns, completely
+    # independent of panel width. The panel x-limit = total chars used.
+    # patchwork width = total chars / centre_chars as before.
+    
+    n_cols_left <- n_label_cols
+    
+    col_maxw <- sapply(seq_len(n_cols_left), function(ci) {
+      vals <- c(header_parts[ci],
+                if(!is.null(dim(label_matrix))) label_matrix[, ci] else label_matrix)
+      max(nchar(trimws(vals[!is.na(vals)])), na.rm = TRUE)
+    })
+    
+    gap_chars <- 3L   # fixed 3-character gap between columns
+    # Absolute x position (in chars) of each column's left edge
+    col_x <- cumsum(c(0, head(col_maxw + gap_chars, -1)))
+    x_limit_left <- col_x[n_cols_left] + col_maxw[n_cols_left] + gap_chars
+    
+    # Truncate each value to its column's max width
+    trunc_val <- function(v, w) {
+      v <- if(is.na(v) || !nzchar(trimws(v))) "" else trimws(v)
+      if(nchar(v) > w) substr(v, 1, w) else v
     }
     
-    # Add outcome column headers if present
-    if("match_vars_used" %in% names(data)) {
-      # Extract match vars from data
-      match_vars_str <- unique(data$match_vars_used)[1]
-      if(!is.na(match_vars_str) && match_vars_str != "" && 
-         !is.null(match_vars_str) && nchar(match_vars_str) > 0) {
-        # Split and convert to title case
-        match_var_names <- strsplit(match_vars_str, "\\|")[[1]]
-        match_var_labels <- sapply(match_var_names, to_title_case)
-        header_parts <- c(header_parts, match_var_labels)
+    left_df <- data.frame(x=numeric(0), y=numeric(0),
+                          label=character(0), bold=logical(0),
+                          stringsAsFactors=FALSE)
+    
+    for(ci in seq_len(n_cols_left))
+      left_df <- rbind(left_df, data.frame(
+        x=col_x[ci], y=header_y,
+        label=trunc_val(header_parts[ci], col_maxw[ci]),
+        bold=TRUE, stringsAsFactors=FALSE))
+    
+    for(ri in seq_len(nrow(plot_data)))
+      for(ci in seq_len(n_cols_left)) {
+        val <- if(!is.null(dim(label_matrix))) label_matrix[ri, ci] else label_matrix[ri]
+        if(!is.na(val) && nzchar(trimws(val)))
+          left_df <- rbind(left_df, data.frame(
+            x=col_x[ci], y=plot_data$row[ri],
+            label=trunc_val(val, col_maxw[ci]),
+            bold=FALSE, stringsAsFactors=FALSE))
       }
-    }
     
-    # Combine with pipe separators
-    header_label <- paste(header_parts, collapse = "  |  ")
+    if(input$show_overall_diamond)
+      left_df <- rbind(left_df, data.frame(
+        x=col_x[1], y=diamond_center_y,
+        label="Overall", bold=TRUE, stringsAsFactors=FALSE))
+    if(grouping_enabled && isTRUE(input$show_group_diamonds) &&
+       !is.null(group_diamond_centers) && length(group_diamond_centers)>0)
+      for(g in names(group_diamond_centers))
+        left_df <- rbind(left_df, data.frame(
+          x=col_x[1], y=group_diamond_centers[g],
+          label=paste0("Group: ", g), bold=FALSE, stringsAsFactors=FALSE))
     
-    y_labels <- c(header_label, y_labels)
+    p_left <- ggplot() +
+      geom_text(data=left_df[!left_df$bold,],
+                aes(x=x, y=y, label=label),
+                hjust=0, vjust=0.5, size=txt_sz,
+                color="black", family="mono") +
+      geom_text(data=left_df[left_df$bold,],
+                aes(x=x, y=y, label=label),
+                hjust=0, vjust=0.5, size=txt_bold,
+                color="black", family="mono", fontface="bold") +
+      scale_x_continuous(limits=c(-0.5, x_limit_left), expand=c(0,0)) +
+      scale_y_continuous(breaks=all_y_breaks,
+                         labels=rep("", length(all_y_breaks)),
+                         limits=ylims, expand=y_expand) +
+      theme_table()
     
-    # Calculate nice x-axis breaks that match the bracket
-    x_axis_breaks <- seq(bracket_min, bracket_max, by = if(bracket_max - bracket_min <= 3) 0.5 else 1)
+    # ── CENTRE FOREST PANEL ───────────────────────────────────────────────────
+    # This is the existing `p` with all the CI lines, points, diamonds.
+    # We just need to add proper scales and theme — no text annotations.
     
-    # Determine x-axis title position - center it on the bracket
-    bracket_center <- (bracket_min + bracket_max) / 2
+    x_axis_breaks <- seq(bracket_min, bracket_max,
+                         by = if(bracket_max - bracket_min <= 3) 0.5 else 1)
     
-    p <- p +
-      scale_y_continuous(
-        breaks = y_breaks,
-        labels = y_labels,
-        limits = c(y_min, y_max),
-        expand = expansion(mult = c(0.02, 0.02))
-      ) +
-      scale_x_continuous(
-        breaks = x_axis_breaks,
-        position = "bottom"
-      ) +
-      coord_cartesian(xlim = c(bracket_min - (bracket_max - bracket_min) * 0.1, 
-                               x_plot_max), 
+    p_centre <- p +
+      scale_y_continuous(breaks = all_y_breaks,
+                         labels = rep("", length(all_y_breaks)),
+                         limits = ylims, expand = y_expand) +
+      scale_x_continuous(breaks = x_axis_breaks, position = "bottom") +
+      coord_cartesian(xlim = c(min(data_min - (data_max - data_min) * 0.08,
+                                   bracket_min - (bracket_max - bracket_min) * 0.02),
+                               bracket_max + (bracket_max - bracket_min) * 0.05),
                       clip = "off") +
-      labs(
-        x = "Effect Size",
-        y = NULL,
-        title    = forest_pkg$plot_title
-      ) +
-      theme_minimal(base_size = input$forest_text_size) +
+      labs(x = "Effect Size", y = NULL, title = forest_pkg$plot_title) +
+      theme_minimal(base_size = fsize) +
       theme(
-        text = element_text(color = "black"),  # Override all text to black
+        text             = element_text(color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.title       = element_text(face = "bold", color = "black"),
-        axis.text.y      = element_text(hjust = 0, size = input$forest_text_size * 0.75, color = "black"),
+        plot.title       = element_text(face = "bold", color = "black",
+                                        hjust = 0.5),
+        axis.text.y      = element_blank(),
+        axis.ticks.y     = element_blank(),
         axis.text.x      = element_text(color = "black"),
-        axis.title.x     = element_text(hjust = (bracket_center - x_plot_min) / (x_plot_max - x_plot_min), color = "black"),
-        axis.title.y     = element_text(color = "black"),
-        plot.margin      = margin(10, 150, 10, 180),  # Significantly increased left margin
+        axis.title.x     = element_text(
+          hjust = (0 - min(data_min - (data_max - data_min) * 0.08,
+                           bracket_min - (bracket_max - bracket_min) * 0.02)) /
+            ((bracket_max + (bracket_max - bracket_min) * 0.05) -
+               min(data_min - (data_max - data_min) * 0.08,
+                   bracket_min - (bracket_max - bracket_min) * 0.02)),
+          color = "black"),
+        plot.margin      = margin(2, 4, 2, 4),
         plot.background  = element_rect(fill = "white", color = NA),
         panel.background = element_rect(fill = "white", color = NA),
         legend.position  = "bottom",
-        legend.title     = element_text(face = "bold", size = input$forest_text_size * 0.9, color = "black"),
-        legend.text      = element_text(size = input$forest_text_size * 0.8, color = "black"),
+        legend.title     = element_text(face = "bold", size = fsize * 0.9,
+                                        color = "black"),
+        legend.text      = element_text(size = fsize * 0.8, color = "black"),
         legend.box.background = element_rect(fill = "white", color = "gray80"),
         legend.margin    = margin(5, 5, 5, 5)
       ) +
-      guides(
-        colour = guide_legend(title = "Group", nrow = 1),
-        fill = guide_legend(title = "Group", nrow = 1),
-        size = "none"  # Hide the size legend (weight)
+      guides(colour = guide_legend(title = "Group", nrow = 1),
+             fill   = guide_legend(title = "Group", nrow = 1),
+             size   = "none")
+    
+    # ── RIGHT STATS TABLE PANEL ───────────────────────────────────────────────
+    # Sub-columns: Effect | [95% CI] | Weight | p-value
+    # Each gets integer x index, remapped to char-unit positions like the left panel.
+    
+    # p-value formatter — italic p using expression-style marker
+    # We use a plain text label but render the p-value rows in a separate
+    fmt_pval <- function(pv) {
+      if(pv < 0.001) "p < 0.001" else
+        if(pv < 0.01)  sprintf("p = %.3f", pv) else
+          sprintf("p = %.2f",  pv)
+    }
+    
+    right_cols      <- list()
+    right_col_names <- c()
+    if(input$show_effect_values) {
+      # Use %.2f (no leading space) so header and values are left-aligned together
+      right_cols[["eff"]]  <- list(hdr="Effect",    w=6L)
+      right_col_names <- c(right_col_names, "eff")
+    }
+    if(input$show_ci_values) {
+      right_cols[["ci"]]   <- list(hdr="[95% CI]",  w=15L)
+      right_col_names <- c(right_col_names, "ci")
+    }
+    if(input$show_weights) {
+      # Weight column doubles as p-value column for overall/group rows
+      right_cols[["wt"]]   <- list(hdr="Weight",    w=9L)
+      right_col_names <- c(right_col_names, "wt")
+    }
+    # No separate pv column — p-values appear in the wt column for overall/group rows
+    
+    r_gap_frac <- 0.03
+    r_total_w  <- sum(sapply(right_col_names, function(s) right_cols[[s]]$w))
+    r_cumx     <- cumsum(c(0, head(sapply(right_col_names, function(s)
+      right_cols[[s]]$w / r_total_w * (1 - r_gap_frac * length(right_col_names)) +
+        r_gap_frac), -1)))
+    names(r_cumx) <- right_col_names
+    r_xmax <- 1.05
+    
+    fmt_row <- function(yi_v, lb_v, ub_v, wt_v, pv_v) {
+      out <- list()
+      if("eff" %in% right_col_names) out[["eff"]] <- sprintf("%.2f", yi_v)
+      if("ci"  %in% right_col_names) out[["ci"]]  <- sprintf("[%5.2f, %5.2f]", lb_v, ub_v)
+      if("wt"  %in% right_col_names) {
+        if(!is.null(pv_v)) {
+          # Overall/group rows: show p-value in the weight column instead
+          out[["wt"]] <- fmt_pval(pv_v)
+        } else if(!is.null(wt_v)) {
+          out[["wt"]] <- sprintf("%.1f%%", wt_v)
+        }
+      }
+      out
+    }
+    
+    right_df <- data.frame(x=numeric(0), y=numeric(0), label=character(0),
+                           bold=logical(0), stringsAsFactors=FALSE)
+    add_right <- function(row_list, y_val, bold_flag) {
+      for(sc in names(row_list)) {
+        right_df <<- rbind(right_df, data.frame(
+          x=r_cumx[sc], y=y_val, label=row_list[[sc]], bold=bold_flag,
+          stringsAsFactors=FALSE))
+      }
+    }
+    
+    # Headers
+    for(sc in right_col_names) {
+      hdr <- right_cols[[sc]]$hdr
+      if(nzchar(hdr))
+        right_df <- rbind(right_df, data.frame(
+          x=r_cumx[sc], y=header_y, label=hdr, bold=TRUE,
+          stringsAsFactors=FALSE))
+    }
+    # Study rows
+    for(ri in seq_len(nrow(plot_data)))
+      add_right(fmt_row(plot_data$yi[ri], plot_data$ci_lower[ri],
+                        plot_data$ci_upper[ri], plot_data$weight[ri], NULL),
+                plot_data$row[ri], FALSE)
+    # Overall row
+    if(input$show_overall_diamond)
+      add_right(fmt_row(coef(model), model$ci.lb, model$ci.ub, NULL,
+                        if(input$show_overall_pvalue) model$pval else NULL),
+                diamond_center_y, TRUE)
+    # Group rows
+    if(grouping_enabled && isTRUE(input$show_group_diamonds) &&
+       !is.null(group_diamond_centers) && length(group_diamond_centers) > 0) {
+      for(g in names(group_diamond_centers)) {
+        gm <- values$forest_group_models[[g]]
+        if(is.null(gm)) next
+        add_right(fmt_row(coef(gm), gm$ci.lb, gm$ci.ub, NULL,
+                          if(input$show_overall_pvalue) gm$pval else NULL),
+                  group_diamond_centers[g], TRUE)
+      }
+    }
+    
+    p_right <- ggplot() +
+      geom_text(data = right_df[!right_df$bold, ],
+                aes(x=x, y=y, label=label),
+                hjust=0, vjust=0.5, size=txt_sz,
+                color="black", family="mono") +
+      geom_text(data = right_df[right_df$bold, ],
+                aes(x=x, y=y, label=label),
+                hjust=0, vjust=0.5, size=txt_bold,
+                color="black", family="mono", fontface="bold") +
+      scale_x_continuous(limits=c(-0.01, r_xmax), expand=c(0,0)) +
+      scale_y_continuous(breaks=all_y_breaks,
+                         labels=rep("", length(all_y_breaks)),
+                         limits=ylims, expand=y_expand) +
+      theme_table()
+    
+    # ── ASSEMBLE WITH PATCHWORK ───────────────────────────────────────────────
+    # Width ratios: left table gets proportional width based on total chars,
+    # centre forest plot gets the bulk, right stats table is fixed-ish.
+    # Patchwork width ratios.
+    # geom_text renders in mm; the panel pixel width is irrelevant to text size.
+    # So we size panels purely by character count relative to the forest plot.
+    # The forest plot has no text so we give it a fixed notional width.
+    # Scale factor 1.3 on left panel ensures monospace text fits comfortably.
+    left_total_chars  <- x_limit_left   # absolute char units, matches x_limit_left
+    right_total_chars <- (sum(sapply(right_col_names, function(s) right_cols[[s]]$w)) +
+                            3 * (length(right_col_names) - 1)) * 1.2
+    centre_chars      <- 55L   # notional char width of forest panel
+    
+    w_left   <- left_total_chars  / centre_chars
+    w_right  <- right_total_chars / centre_chars
+    
+    combined <- (p_left + p_centre + p_right) +
+      patchwork::plot_layout(
+        nrow   = 1,
+        widths = c(w_left, 1, w_right)
       )
     
-    # Store subtitle in values so it can be shown as a caption below the plot
+    p <- combined
+    
     values$forest_subtitle <- forest_pkg$subtitle
     
     p
@@ -4737,4 +4854,3 @@ server <- function(input, output, session) {
 
 # Run app
 shinyApp(ui = ui, server = server)
-
